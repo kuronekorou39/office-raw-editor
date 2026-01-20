@@ -638,19 +638,12 @@ class XmlEditorWidget(QWidget):
             cursor.select(QTextCursor.SelectionType.Document)
             cursor.insertText(formatted)
 
-            self._set_status("XMLを整形しました")
-
         except Exception as e:
             QMessageBox.warning(
                 self,
                 "整形エラー",
                 f"XMLの整形に失敗しました。構文エラーがある可能性があります。\n\n{e}"
             )
-
-    def _set_status(self, message: str):
-        """Set a temporary status message."""
-        # Could be expanded to show in status bar
-        pass
 
     def _show_format_suggestion(self):
         """Show a suggestion to format the XML for better performance."""

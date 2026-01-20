@@ -1,6 +1,5 @@
 """File tree widget for displaying docx contents."""
 
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +20,7 @@ from ..utils.constants import (
     FILE_TYPE_MAP,
     FOLDER_ICON,
     UNKNOWN_ICON,
+    format_file_size,
 )
 
 
@@ -52,6 +52,7 @@ class FileTreeWidget(QTreeWidget):
         super().__init__(parent)
         self._workspace_path: Optional[Path] = None
         self._file_statuses: dict[str, str] = {}
+        self._items_map: dict[str, QTreeWidgetItem] = {}
         self._setup_ui()
         self._connect_signals()
 
@@ -168,22 +169,6 @@ class FileTreeWidget(QTreeWidget):
 
         return style.standardIcon(QStyle.StandardPixmap.SP_FileIcon)
 
-    def _format_size(self, size: int) -> str:
-        """Format file size for display.
-
-        Args:
-            size: File size in bytes.
-
-        Returns:
-            Formatted size string.
-        """
-        if size < 1024:
-            return f"{size} B"
-        elif size < 1024 * 1024:
-            return f"{size / 1024:.1f} KB"
-        else:
-            return f"{size / (1024 * 1024):.1f} MB"
-
     def _get_file_type(self, is_dir: bool, suffix: str) -> str:
         """Get the file type description.
 
@@ -225,7 +210,7 @@ class FileTreeWidget(QTreeWidget):
             return
 
         # Build tree structure
-        self._items_map: dict[str, QTreeWidgetItem] = {}
+        self._items_map.clear()
 
         # Collect all paths: existing files + deleted files from statuses
         existing_paths = set()
@@ -272,7 +257,7 @@ class FileTreeWidget(QTreeWidget):
                 item = QTreeWidgetItem()
                 item.setData(0, Qt.ItemDataRole.UserRole, current_rel)
                 item.setText(0, name)
-                item.setText(1, self._format_size(size) if not is_dir else "")
+                item.setText(1, format_file_size(size) if not is_dir else "")
                 item.setText(2, self._get_file_type(is_dir, suffix))
                 item.setIcon(0, self._get_file_icon(is_dir, suffix))
 
@@ -343,7 +328,7 @@ class FileTreeWidget(QTreeWidget):
         old_statuses = self._file_statuses
         self._file_statuses = file_statuses
 
-        if not hasattr(self, '_items_map') or not self._workspace_path:
+        if not self._workspace_path:
             return
 
         # Check if we need to reload (new deleted files appeared)

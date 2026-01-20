@@ -42,6 +42,9 @@ FILE_TYPE_MAP = {
     ".wmf": IMAGE_ICON,
 }
 
+# Image file extensions (for preview)
+IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico'}
+
 # Window settings
 DEFAULT_WINDOW_WIDTH = 800
 DEFAULT_WINDOW_HEIGHT = 600
@@ -74,3 +77,21 @@ DIALOG_TITLE_WARNING = "警告"
 # File filters
 FILE_FILTER_DOCX = "Word Documents (*.docx)"
 FILE_FILTER_ALL = "All Files (*.*)"
+
+
+# Utility functions
+def format_file_size(size: int) -> str:
+    """Format file size for display.
+
+    Args:
+        size: File size in bytes.
+
+    Returns:
+        Formatted size string (e.g., "1.5 KB", "2.3 MB").
+    """
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024 * 1024:
+        return f"{size / 1024:.1f} KB"
+    else:
+        return f"{size / (1024 * 1024):.1f} MB"

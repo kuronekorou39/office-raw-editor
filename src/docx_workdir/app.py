@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import Qt
 
 from .ui.main_window import MainWindow
 from .ui.styles import APP_STYLESHEET

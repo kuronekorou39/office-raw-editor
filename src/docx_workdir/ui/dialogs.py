@@ -119,7 +119,7 @@ class ConfirmDialog:
         result = QMessageBox.question(
             parent,
             DIALOG_TITLE_WARNING,
-            MSG_CONFIRM_EXIT + "\n\n保存しますか？",
+            f"{MSG_CONFIRM_EXIT}\n\n保存しますか？",
             QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
         )

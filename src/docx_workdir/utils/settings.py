@@ -1,7 +1,5 @@
 """Settings management for docx-workdir application."""
 
-import json
-from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtCore import QSettings

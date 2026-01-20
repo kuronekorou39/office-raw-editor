@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtCore import Qt, QTimer, QSize
-from PyQt6.QtGui import QAction, QKeySequence, QCloseEvent, QIcon, QFont
+from PyQt6.QtGui import QAction, QKeySequence, QCloseEvent
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -20,7 +20,6 @@ from PyQt6.QtWidgets import (
     QSplitter,
     QTabWidget,
     QFrame,
-    QToolButton,
     QSizePolicy,
 )
 
@@ -36,6 +35,8 @@ from ..utils.constants import (
     MSG_ERROR_SAVE,
     MSG_EXTRACT_SUCCESS,
     MSG_REPACKAGE_SUCCESS,
+    IMAGE_EXTENSIONS,
+    format_file_size,
 )
 from ..utils.settings import get_settings
 from .file_tree import FileTreeWidget
@@ -757,19 +758,17 @@ class MainWindow(QMainWindow):
         self.info_label.setText(str(abs_path.name))
 
         # Image file extensions
-        image_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico']
-
         if abs_path.is_file():
             try:
                 size = abs_path.stat().st_size
                 info = f"📄 ファイル: {abs_path.name}\n"
-                info += f"📦 サイズ: {self._format_size(size)}\n"
+                info += f"📦 サイズ: {format_file_size(size)}\n"
                 info += f"📍 パス: {abs_path.relative_to(self.workspace.current_workspace)}\n"
 
                 suffix_lower = abs_path.suffix.lower()
 
                 # Check if it's an image file
-                if suffix_lower in image_extensions:
+                if suffix_lower in IMAGE_EXTENSIONS:
                     self._show_image_preview(abs_path)
                     info += f"\n🖼️ 画像プレビューを上に表示中"
                 else:
@@ -972,15 +971,6 @@ class MainWindow(QMainWindow):
         self._set_status(f"保存しました: {Path(file_path).name}")
         self.workspace.is_modified = True
         self._update_ui_state()
-
-    def _format_size(self, size: int) -> str:
-        """Format file size for display."""
-        if size < 1024:
-            return f"{size} B"
-        elif size < 1024 * 1024:
-            return f"{size / 1024:.1f} KB"
-        else:
-            return f"{size / (1024 * 1024):.1f} MB"
 
     def _confirm_close_current(self) -> bool:
         """Confirm closing the current workspace if there are modifications."""

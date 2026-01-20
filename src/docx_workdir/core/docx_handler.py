@@ -2,15 +2,10 @@
 
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 
 class DocxHandler:
     """Handles extraction and repackaging of .docx files."""
-
-    def __init__(self):
-        """Initialize the DocxHandler."""
-        pass
 
     @staticmethod
     def is_valid_docx(file_path: Path) -> bool:

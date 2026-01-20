@@ -1,7 +1,6 @@
 """Settings dialog for docx-workdir application."""
 
 import os
-from pathlib import Path
 
 from PyQt6.QtWidgets import (
     QDialog,
@@ -14,7 +13,6 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QDialogButtonBox,
 )
-from PyQt6.QtCore import Qt
 
 from ..utils.settings import get_settings
 from .styles import APP_STYLESHEET
