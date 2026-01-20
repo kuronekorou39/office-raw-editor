@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 
 from .ui.main_window import MainWindow
+from .ui.styles import APP_STYLESHEET
 from .utils.constants import APP_NAME
 
 
@@ -29,6 +30,7 @@ class DocxWorkdirApp:
 
         # Set application style
         self.app.setStyle("Fusion")
+        self.app.setStyleSheet(APP_STYLESHEET)
 
         self.main_window: Optional[MainWindow] = None
         self._initial_file: Optional[Path] = None

@@ -11,13 +11,13 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QCheckBox,
     QFileDialog,
     QDialogButtonBox,
 )
 from PyQt6.QtCore import Qt
 
 from ..utils.settings import get_settings
+from .styles import APP_STYLESHEET
 
 
 class SettingsDialog(QDialog):
@@ -33,16 +33,13 @@ class SettingsDialog(QDialog):
         """Set up the dialog UI."""
         self.setWindowTitle("設定")
         self.setMinimumWidth(600)
+        self.setStyleSheet(APP_STYLESHEET)
 
         layout = QVBoxLayout(self)
 
         # External editor group
         editor_group = QGroupBox("外部エディタ")
         editor_layout = QVBoxLayout(editor_group)
-
-        # Use external editor checkbox
-        self.chk_use_external = QCheckBox("ダブルクリック時に外部エディタを使用する")
-        editor_layout.addWidget(self.chk_use_external)
 
         # Editor path
         path_layout = QHBoxLayout()
@@ -84,10 +81,17 @@ class SettingsDialog(QDialog):
             expanded = os.path.expandvars(path)
             exists = os.path.isfile(expanded)
             status = "✓" if exists else "✗"
+            status_color = "#059669" if exists else "#DC2626"
 
             btn = QPushButton(f"{status} {name}")
             btn.setToolTip(f"{path}\n展開後: {expanded}")
-            btn.setStyleSheet("text-align: left; padding: 5px;")
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    text-align: left;
+                    padding: 8px 12px;
+                    color: {status_color if exists else '#94A3B8'};
+                }}
+            """)
             btn.setEnabled(exists)
             btn.clicked.connect(lambda checked, p=expanded: self._set_editor_path(p))
             common_layout.addWidget(btn)
@@ -107,7 +111,6 @@ class SettingsDialog(QDialog):
     def _load_settings(self):
         """Load current settings into the UI."""
         self.txt_editor_path.setText(self.settings.get_external_editor())
-        self.chk_use_external.setChecked(self.settings.get_use_external_editor())
         self._on_path_changed()
 
     def _on_path_changed(self):
@@ -124,10 +127,10 @@ class SettingsDialog(QDialog):
 
         if os.path.isfile(expanded):
             self.status_label.setText(f"✓ 有効なパス: {expanded}")
-            self.status_label.setStyleSheet("color: green;")
+            self.status_label.setStyleSheet("color: #059669;")  # Green
         else:
             self.status_label.setText(f"✗ ファイルが見つかりません: {expanded}")
-            self.status_label.setStyleSheet("color: red;")
+            self.status_label.setStyleSheet("color: #DC2626;")  # Red
 
     def _browse_editor(self):
         """Open file dialog to browse for external editor."""
@@ -153,6 +156,5 @@ class SettingsDialog(QDialog):
             path = os.path.normpath(path)
 
         self.settings.set_external_editor(path)
-        self.settings.set_use_external_editor(self.chk_use_external.isChecked())
         self.settings.sync()
         self.accept()

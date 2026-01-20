@@ -76,6 +76,20 @@ class ConfirmDialog:
         return None
 
     @staticmethod
+    def confirm(parent, title: str, message: str) -> bool:
+        """Show a simple confirmation dialog.
+
+        Args:
+            parent: Parent widget.
+            title: Dialog title.
+            message: Dialog message.
+
+        Returns:
+            True if user confirmed.
+        """
+        return ConfirmDialog.ask_yes_no(parent, title, message)
+
+    @staticmethod
     def confirm_overwrite(parent, file_path: str) -> bool:
         """Confirm overwriting an existing file.
 

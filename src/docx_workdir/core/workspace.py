@@ -127,6 +127,36 @@ class WorkspaceManager:
 
         return False
 
+    def get_file_statuses(self) -> dict[str, str]:
+        """Get the status of each file in the workspace.
+
+        Returns:
+            Dictionary mapping relative paths to status:
+            - 'M': Modified
+            - 'A': Added (new file)
+            - 'D': Deleted
+            - '': Unchanged
+        """
+        if not self._current_workspace:
+            return {}
+
+        statuses = {}
+        current_hashes = self._snapshot_hashes()
+
+        # Check for modified or added files
+        for path, hash_val in current_hashes.items():
+            if path not in self._file_hashes:
+                statuses[path] = 'A'  # Added
+            elif self._file_hashes[path] != hash_val:
+                statuses[path] = 'M'  # Modified
+
+        # Check for deleted files
+        for path in self._file_hashes:
+            if path not in current_hashes:
+                statuses[path] = 'D'  # Deleted
+
+        return statuses
+
     def open_docx(self, docx_path: Path, create_backup: bool = True) -> Path:
         """Open a docx file and extract it to a workspace.
 
@@ -261,3 +291,59 @@ class WorkspaceManager:
         if not self._current_workspace:
             return None
         return self._current_workspace / relative_path
+
+    def revert_file(self, relative_path: str) -> bool:
+        """Revert a file to its original state from the source docx.
+
+        Args:
+            relative_path: Path relative to workspace root.
+
+        Returns:
+            True if revert was successful.
+
+        Raises:
+            RuntimeError: If no workspace or source docx is open.
+            ValueError: If the file cannot be reverted.
+        """
+        if not self._current_workspace or not self._source_docx:
+            raise RuntimeError("No workspace or source docx is open")
+
+        # Normalize path separators for zip (always use forward slash)
+        zip_path = relative_path.replace('\\', '/')
+        abs_path = self._current_workspace / relative_path
+
+        # Determine file status
+        status = self.get_file_statuses().get(relative_path, '')
+
+        if status == 'A':
+            # Added file - just delete it
+            if abs_path.exists():
+                abs_path.unlink()
+            return True
+
+        elif status == 'M' or status == 'D':
+            # Modified or Deleted - restore from original docx
+            try:
+                content = DocxHandler.read_file(self._source_docx, zip_path)
+                # Ensure parent directory exists
+                abs_path.parent.mkdir(parents=True, exist_ok=True)
+                abs_path.write_bytes(content)
+                return True
+            except KeyError:
+                raise ValueError(f"File not found in original docx: {relative_path}")
+
+        else:
+            # No changes to revert
+            return False
+
+    def can_revert_file(self, relative_path: str) -> bool:
+        """Check if a file can be reverted.
+
+        Args:
+            relative_path: Path relative to workspace root.
+
+        Returns:
+            True if the file has changes that can be reverted.
+        """
+        status = self.get_file_statuses().get(relative_path, '')
+        return status in ('M', 'A', 'D')

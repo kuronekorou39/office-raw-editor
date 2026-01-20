@@ -26,14 +26,18 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QLabel,
     QMessageBox,
-    QCheckBox,
     QLineEdit,
     QTextEdit,
 )
 
+from .styles import SYNTAX_COLORS, LINE_NUMBER_STYLE, COLORS, APP_STYLESHEET
+
 
 class XmlHighlighter(QSyntaxHighlighter):
     """Simple and fast syntax highlighter for XML content."""
+
+    # Maximum line length to process (longer lines skip highlighting for performance)
+    MAX_LINE_LENGTH = 5000
 
     def __init__(self, document: QTextDocument):
         super().__init__(document)
@@ -44,22 +48,22 @@ class XmlHighlighter(QSyntaxHighlighter):
         """Initialize highlighting rules with pre-compiled patterns."""
         self._rules = []
 
-        # Tag name format (blue, bold)
+        # Tag name format (modern blue)
         tag_format = QTextCharFormat()
-        tag_format.setForeground(QColor("#0000FF"))
+        tag_format.setForeground(QColor(SYNTAX_COLORS['tag']))
         tag_format.setFontWeight(QFont.Weight.Bold)
 
-        # Attribute value format (green)
+        # Attribute value format (modern green)
         value_format = QTextCharFormat()
-        value_format.setForeground(QColor("#008000"))
+        value_format.setForeground(QColor(SYNTAX_COLORS['value']))
 
-        # Attribute name format (red)
+        # Attribute name format (amber)
         attr_format = QTextCharFormat()
-        attr_format.setForeground(QColor("#FF0000"))
+        attr_format.setForeground(QColor(SYNTAX_COLORS['attribute']))
 
         # Comment format (gray)
         comment_format = QTextCharFormat()
-        comment_format.setForeground(QColor("#808080"))
+        comment_format.setForeground(QColor(SYNTAX_COLORS['comment']))
 
         # Simple rules - order matters!
         self._rules.append((re.compile(r'<!--.*?-->'), comment_format))
@@ -76,6 +80,10 @@ class XmlHighlighter(QSyntaxHighlighter):
     def highlightBlock(self, text: str):
         """Highlight a block of text."""
         if not self._enabled:
+            return
+
+        # Skip highlighting for very long lines (performance optimization)
+        if len(text) > self.MAX_LINE_LENGTH:
             return
 
         for pattern, fmt in self._rules:
@@ -161,7 +169,7 @@ class CodeEditor(QPlainTextEdit):
 
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
-            line_color = QColor("#FFFACD")  # Light yellow
+            line_color = QColor(LINE_NUMBER_STYLE['current_line'])
             selection.format.setBackground(line_color)
             selection.format.setProperty(QTextFormat.Property.FullWidthSelection, True)
             selection.cursor = self.textCursor()
@@ -173,7 +181,7 @@ class CodeEditor(QPlainTextEdit):
     def line_number_area_paint_event(self, event):
         """Paint the line numbers."""
         painter = QPainter(self.line_number_area)
-        painter.fillRect(event.rect(), QColor("#F0F0F0"))
+        painter.fillRect(event.rect(), QColor(LINE_NUMBER_STYLE['background']))
 
         block = self.firstVisibleBlock()
         block_number = block.blockNumber()
@@ -189,12 +197,12 @@ class CodeEditor(QPlainTextEdit):
 
                 # Highlight current line number
                 if block_number == current_line:
-                    painter.setPen(QColor("#000000"))
+                    painter.setPen(QColor(LINE_NUMBER_STYLE['text_current']))
                     font = painter.font()
                     font.setBold(True)
                     painter.setFont(font)
                 else:
-                    painter.setPen(QColor("#808080"))
+                    painter.setPen(QColor(LINE_NUMBER_STYLE['text']))
                     font = painter.font()
                     font.setBold(False)
                     painter.setFont(font)
@@ -242,56 +250,130 @@ class XmlEditorWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
+        # Apply stylesheet
+        self.setStyleSheet(APP_STYLESHEET)
+
+        # Compact button style for editor toolbar
+        toolbar_btn_style = """
+            QPushButton {
+                padding: 4px 10px;
+                min-height: 26px;
+                font-size: 12px;
+            }
+        """
+
+        # Toggle button style (for highlight/wrap)
+        toggle_btn_style = """
+            QPushButton {
+                padding: 4px 8px;
+                min-height: 26px;
+                font-size: 12px;
+                background-color: #F1F5F9;
+                border: 1px solid #E2E8F0;
+            }
+            QPushButton:checked {
+                background-color: #DBEAFE;
+                border-color: #2563EB;
+                color: #2563EB;
+            }
+            QPushButton:hover {
+                background-color: #E2E8F0;
+            }
+            QPushButton:checked:hover {
+                background-color: #BFDBFE;
+            }
+        """
+
+        # Primary button style for save
+        save_btn_style = """
+            QPushButton {
+                background-color: #2563EB;
+                color: white;
+                border: none;
+                padding: 4px 12px;
+                min-height: 26px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #1D4ED8;
+            }
+            QPushButton:disabled {
+                background-color: #93C5FD;
+            }
+        """
+
         # Header with file info and buttons
         header = QHBoxLayout()
+        header.setSpacing(6)
 
         self.file_label = QLabel("ファイルが選択されていません")
-        self.file_label.setStyleSheet("font-weight: bold;")
+        self.file_label.setStyleSheet("font-weight: bold; color: #1E293B;")
         header.addWidget(self.file_label)
 
         header.addStretch()
 
-        self.modified_label = QLabel("")
-        self.modified_label.setStyleSheet("color: orange;")
-        header.addWidget(self.modified_label)
+        # Syntax highlight toggle (as button)
+        self.btn_highlight = QPushButton("🎨 色付け")
+        self.btn_highlight.setCheckable(True)
+        self.btn_highlight.setChecked(True)
+        self.btn_highlight.setStyleSheet(toggle_btn_style)
+        self.btn_highlight.setToolTip("シンタックスハイライトの ON/OFF")
+        self.btn_highlight.toggled.connect(self._on_highlight_toggled)
+        header.addWidget(self.btn_highlight)
 
-        # Syntax highlight toggle
-        self.chk_highlight = QCheckBox("色付け")
-        self.chk_highlight.setChecked(True)
-        self.chk_highlight.toggled.connect(self._on_highlight_toggled)
-        header.addWidget(self.chk_highlight)
+        # Word wrap toggle (as button)
+        self.btn_wrap = QPushButton("↩️ 折返し")
+        self.btn_wrap.setCheckable(True)
+        self.btn_wrap.setChecked(False)
+        self.btn_wrap.setStyleSheet(toggle_btn_style)
+        self.btn_wrap.setToolTip("行の折り返し ON/OFF")
+        self.btn_wrap.toggled.connect(self._on_wrap_toggled)
+        header.addWidget(self.btn_wrap)
+
+        # Separator
+        sep = QLabel("|")
+        sep.setStyleSheet("color: #CBD5E1;")
+        header.addWidget(sep)
 
         # Format XML button
-        self.btn_format = QPushButton("整形")
+        self.btn_format = QPushButton("📐 整形")
         self.btn_format.setToolTip("XMLを整形して見やすくする")
+        self.btn_format.setStyleSheet(toolbar_btn_style)
         self.btn_format.clicked.connect(self.format_xml)
         header.addWidget(self.btn_format)
 
         # Search button
-        self.btn_search = QPushButton("検索")
+        self.btn_search = QPushButton("🔍 検索")
         self.btn_search.setToolTip("Ctrl+F")
+        self.btn_search.setStyleSheet(toolbar_btn_style)
         self.btn_search.clicked.connect(self.toggle_search_bar)
         header.addWidget(self.btn_search)
 
-        self.btn_save = QPushButton("保存")
+        # Separator
+        sep2 = QLabel("|")
+        sep2.setStyleSheet("color: #CBD5E1;")
+        header.addWidget(sep2)
+
+        self.btn_save = QPushButton("💾 保存")
         self.btn_save.setToolTip("Ctrl+S")
+        self.btn_save.setStyleSheet(save_btn_style)
         self.btn_save.setEnabled(False)
         self.btn_save.clicked.connect(self.save_file)
         header.addWidget(self.btn_save)
-
-        self.btn_reload = QPushButton("再読込")
-        self.btn_reload.setEnabled(False)
-        self.btn_reload.clicked.connect(self.reload_file)
-        header.addWidget(self.btn_reload)
 
         layout.addLayout(header)
 
         # Search bar (hidden by default)
         self.search_bar = QWidget()
+        self.search_bar.setStyleSheet("background-color: #F1F5F9; border-radius: 6px; padding: 4px;")
         search_layout = QHBoxLayout(self.search_bar)
-        search_layout.setContentsMargins(0, 0, 0, 0)
+        search_layout.setContentsMargins(8, 4, 8, 4)
 
-        search_layout.addWidget(QLabel("検索:"))
+        search_label = QLabel("🔍")
+        search_label.setStyleSheet("background: transparent;")
+        search_layout.addWidget(search_label)
+
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("検索文字列を入力...")
         self.search_input.returnPressed.connect(self.find_next)
@@ -299,18 +381,22 @@ class XmlEditorWidget(QWidget):
         search_layout.addWidget(self.search_input)
 
         self.search_result_label = QLabel("")
+        self.search_result_label.setStyleSheet("background: transparent; color: #64748B;")
         search_layout.addWidget(self.search_result_label)
 
-        self.btn_find_prev = QPushButton("前へ")
+        self.btn_find_prev = QPushButton("◀ 前へ")
+        self.btn_find_prev.setStyleSheet(toolbar_btn_style)
         self.btn_find_prev.clicked.connect(self.find_previous)
         search_layout.addWidget(self.btn_find_prev)
 
-        self.btn_find_next = QPushButton("次へ")
+        self.btn_find_next = QPushButton("次へ ▶")
+        self.btn_find_next.setStyleSheet(toolbar_btn_style)
         self.btn_find_next.clicked.connect(self.find_next)
         search_layout.addWidget(self.btn_find_next)
 
-        self.btn_close_search = QPushButton("×")
+        self.btn_close_search = QPushButton("✕")
         self.btn_close_search.setFixedWidth(30)
+        self.btn_close_search.setStyleSheet(toolbar_btn_style)
         self.btn_close_search.clicked.connect(self.hide_search_bar)
         search_layout.addWidget(self.btn_close_search)
 
@@ -366,6 +452,13 @@ class XmlEditorWidget(QWidget):
         """Handle highlight checkbox toggle."""
         self.highlighter.set_enabled(enabled)
 
+    def _on_wrap_toggled(self, enabled: bool):
+        """Handle word wrap checkbox toggle."""
+        if enabled:
+            self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+        else:
+            self.editor.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+
     def _on_text_changed(self):
         """Handle text change in the editor."""
         if self._current_file:
@@ -382,11 +475,17 @@ class XmlEditorWidget(QWidget):
 
     def _update_modified_indicator(self):
         """Update the modified indicator in the UI."""
-        if self._is_modified:
-            self.modified_label.setText("変更あり")
-            self.btn_save.setEnabled(True)
+        if self._current_file:
+            name = self._current_file.name
+            if self._is_modified:
+                self.file_label.setText(f"{name}  [M]")
+                self.file_label.setStyleSheet("font-weight: bold; color: #D97706;")  # Amber for modified
+                self.btn_save.setEnabled(True)
+            else:
+                self.file_label.setText(name)
+                self.file_label.setStyleSheet("font-weight: bold; color: #1E293B;")
+                self.btn_save.setEnabled(False)
         else:
-            self.modified_label.setText("")
             self.btn_save.setEnabled(False)
 
     # ========== Search functionality ==========
@@ -451,7 +550,7 @@ class XmlEditorWidget(QWidget):
 
         cursor = self.editor.textCursor()
         highlight_format = QTextCharFormat()
-        highlight_format.setBackground(QColor("#FFFF00"))  # Yellow
+        highlight_format.setBackground(QColor(COLORS['primary_light']))
 
         for pos in self._search_matches:
             cursor.setPosition(pos)
@@ -553,6 +652,26 @@ class XmlEditorWidget(QWidget):
         # Could be expanded to show in status bar
         pass
 
+    def _show_format_suggestion(self):
+        """Show a suggestion to format the XML for better performance."""
+        from PyQt6.QtCore import QTimer
+
+        def show_dialog():
+            result = QMessageBox.question(
+                self,
+                "整形の提案",
+                "このファイルは非常に長い行を含んでいます。\n"
+                "XMLを整形すると表示が軽くなり、編集しやすくなります。\n\n"
+                "今すぐ整形しますか？",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if result == QMessageBox.StandardButton.Yes:
+                self.format_xml()
+
+        # Show dialog after a short delay to let the UI settle
+        QTimer.singleShot(100, show_dialog)
+
     # ========== File operations ==========
 
     def load_file(self, file_path: Path) -> bool:
@@ -576,11 +695,15 @@ class XmlEditorWidget(QWidget):
             self._original_content = content
             self._is_modified = False
 
-            # Disable highlighter for large files
+            # Check for very long lines (unformatted XML)
+            max_line_len = max((len(line) for line in content.split('\n')), default=0)
+            has_long_lines = max_line_len > 10000
+
+            # Disable highlighter for large files or files with very long lines
             is_large = len(content) > 100000
-            if is_large:
+            if is_large or has_long_lines:
                 self.highlighter.set_enabled(False)
-                self.chk_highlight.setChecked(False)
+                self.btn_highlight.setChecked(False)
 
             # Block signals while setting text
             self.editor.blockSignals(True)
@@ -590,13 +713,16 @@ class XmlEditorWidget(QWidget):
             self.editor.blockSignals(False)
 
             self.file_label.setText(file_path.name)
-            self.btn_reload.setEnabled(True)
             self._update_modified_indicator()
 
             # Move cursor to beginning
             cursor = self.editor.textCursor()
             cursor.movePosition(QTextCursor.MoveOperation.Start)
             self.editor.setTextCursor(cursor)
+
+            # Show suggestion to format if file has very long lines
+            if has_long_lines:
+                self._show_format_suggestion()
 
             return True
 
@@ -653,9 +779,8 @@ class XmlEditorWidget(QWidget):
         self.editor.clear()
         self.editor.blockSignals(False)
         self.file_label.setText("ファイルが選択されていません")
+        self.file_label.setStyleSheet("font-weight: bold; color: #1E293B;")
         self.btn_save.setEnabled(False)
-        self.btn_reload.setEnabled(False)
-        self.modified_label.setText("")
         self.hide_search_bar()
 
     def has_unsaved_changes(self) -> bool:
