@@ -108,9 +108,18 @@ class LineNumberArea(QWidget):
 class CodeEditor(QPlainTextEdit):
     """Plain text editor with line numbers and current line highlighting."""
 
+    # Font size limits
+    MIN_FONT_SIZE = 6
+    MAX_FONT_SIZE = 72
+    DEFAULT_FONT_SIZE = 10
+
+    # Signal emitted when zoom level changes
+    zoom_changed = pyqtSignal(int)  # Emits new font size
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.line_number_area = LineNumberArea(self)
+        self._font_size = self.DEFAULT_FONT_SIZE
 
         # Connect signals for line number updates
         self.blockCountChanged.connect(self.update_line_number_area_width)
@@ -121,7 +130,7 @@ class CodeEditor(QPlainTextEdit):
         self.highlight_current_line()
 
         # Set monospace font
-        font = QFont("Consolas", 10)
+        font = QFont("Consolas", self._font_size)
         font.setStyleHint(QFont.StyleHint.Monospace)
         self.setFont(font)
 
@@ -224,6 +233,51 @@ class CodeEditor(QPlainTextEdit):
             cursor.setPosition(block.position())
             self.setTextCursor(cursor)
             self.centerCursor()
+
+    def wheelEvent(self, event):
+        """Handle mouse wheel events for zooming with Ctrl."""
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            delta = event.angleDelta().y()
+            if delta > 0:
+                self.zoom_in()
+            elif delta < 0:
+                self.zoom_out()
+            event.accept()
+        else:
+            super().wheelEvent(event)
+
+    def zoom_in(self, increment: int = 1):
+        """Increase font size."""
+        new_size = min(self._font_size + increment, self.MAX_FONT_SIZE)
+        if new_size != self._font_size:
+            self._set_font_size(new_size)
+
+    def zoom_out(self, decrement: int = 1):
+        """Decrease font size."""
+        new_size = max(self._font_size - decrement, self.MIN_FONT_SIZE)
+        if new_size != self._font_size:
+            self._set_font_size(new_size)
+
+    def zoom_reset(self):
+        """Reset font size to default."""
+        self._set_font_size(self.DEFAULT_FONT_SIZE)
+
+    def _set_font_size(self, size: int):
+        """Set the font size."""
+        self._font_size = size
+        font = QFont("Consolas", size)
+        font.setStyleHint(QFont.StyleHint.Monospace)
+        self.setFont(font)
+        # Also update document's default font
+        self.document().setDefaultFont(font)
+        # Update line number area
+        self.update_line_number_area_width(0)
+        # Emit signal
+        self.zoom_changed.emit(size)
+
+    def get_font_size(self) -> int:
+        """Get current font size."""
+        return self._font_size
 
 
 class XmlEditorWidget(QWidget):
@@ -355,6 +409,33 @@ class XmlEditorWidget(QWidget):
         sep2.setStyleSheet("color: #CBD5E1;")
         header.addWidget(sep2)
 
+        # Zoom buttons
+        self.btn_zoom_out = QPushButton("A-")
+        self.btn_zoom_out.setToolTip("縮小 (Ctrl+-)")
+        self.btn_zoom_out.setStyleSheet(toolbar_btn_style)
+        self.btn_zoom_out.setFixedWidth(36)
+        self.btn_zoom_out.clicked.connect(self._zoom_out)
+        header.addWidget(self.btn_zoom_out)
+
+        self.zoom_label = QLabel("100%")
+        self.zoom_label.setFixedWidth(45)
+        self.zoom_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.zoom_label.setStyleSheet("color: #64748B; font-size: 11px;")
+        self.zoom_label.setToolTip("フォントサイズ (Ctrl+0 でリセット)")
+        header.addWidget(self.zoom_label)
+
+        self.btn_zoom_in = QPushButton("A+")
+        self.btn_zoom_in.setToolTip("拡大 (Ctrl++)")
+        self.btn_zoom_in.setStyleSheet(toolbar_btn_style)
+        self.btn_zoom_in.setFixedWidth(36)
+        self.btn_zoom_in.clicked.connect(self._zoom_in)
+        header.addWidget(self.btn_zoom_in)
+
+        # Separator
+        sep3 = QLabel("|")
+        sep3.setStyleSheet("color: #CBD5E1;")
+        header.addWidget(sep3)
+
         self.btn_save = QPushButton("💾 保存")
         self.btn_save.setToolTip("Ctrl+S")
         self.btn_save.setStyleSheet(save_btn_style)
@@ -427,6 +508,19 @@ class XmlEditorWidget(QWidget):
         escape_shortcut = QShortcut(QKeySequence("Escape"), self)
         escape_shortcut.activated.connect(self.hide_search_bar)
 
+        # Zoom shortcuts
+        zoom_in_shortcut = QShortcut(QKeySequence("Ctrl++"), self)
+        zoom_in_shortcut.activated.connect(self._zoom_in)
+
+        zoom_in_shortcut2 = QShortcut(QKeySequence("Ctrl+="), self)
+        zoom_in_shortcut2.activated.connect(self._zoom_in)
+
+        zoom_out_shortcut = QShortcut(QKeySequence("Ctrl+-"), self)
+        zoom_out_shortcut.activated.connect(self._zoom_out)
+
+        zoom_reset_shortcut = QShortcut(QKeySequence("Ctrl+0"), self)
+        zoom_reset_shortcut.activated.connect(self._zoom_reset)
+
         # Status bar
         status_layout = QHBoxLayout()
         self.line_col_label = QLabel("行: 1, 列: 1")
@@ -440,6 +534,31 @@ class XmlEditorWidget(QWidget):
     def _connect_signals(self):
         """Connect internal signals."""
         self.editor.textChanged.connect(self._on_text_changed)
+        self.editor.zoom_changed.connect(self._update_zoom_label)
+
+    # ========== Zoom functionality ==========
+
+    def _zoom_in(self):
+        """Zoom in (increase font size)."""
+        self.editor.zoom_in()
+        self._update_zoom_label()
+
+    def _zoom_out(self):
+        """Zoom out (decrease font size)."""
+        self.editor.zoom_out()
+        self._update_zoom_label()
+
+    def _zoom_reset(self):
+        """Reset zoom to default."""
+        self.editor.zoom_reset()
+        self._update_zoom_label()
+
+    def _update_zoom_label(self, font_size: int = None):
+        """Update the zoom percentage label."""
+        current_size = font_size if font_size is not None else self.editor.get_font_size()
+        default_size = CodeEditor.DEFAULT_FONT_SIZE
+        percentage = int(current_size / default_size * 100)
+        self.zoom_label.setText(f"{percentage}%")
 
     def _update_cursor_position(self):
         """Update the line and column display."""
@@ -511,10 +630,16 @@ class XmlEditorWidget(QWidget):
 
     def _on_search_text_changed(self, text: str):
         """Handle search text changes for live search."""
-        self._find_all(text)
+        # When search text changes, search from current cursor position
+        self._find_all(text, from_cursor=True)
 
-    def _find_all(self, text: str):
-        """Find all occurrences of text."""
+    def _find_all(self, text: str, from_cursor: bool = False):
+        """Find all occurrences of text.
+
+        Args:
+            text: The text to search for.
+            from_cursor: If True, start from cursor position. If False, start from beginning.
+        """
         self._is_searching = True
         try:
             self._search_matches = []
@@ -537,8 +662,21 @@ class XmlEditorWidget(QWidget):
             if self._search_matches:
                 self.search_result_label.setText(f"{len(self._search_matches)} 件")
                 self._highlight_search_matches(text)
+
+                # Find the match closest to or after cursor position
+                cursor_pos = self.editor.textCursor().position()
                 self._current_match_index = 0
-                self._goto_match(0)
+
+                if from_cursor:
+                    for i, match_pos in enumerate(self._search_matches):
+                        if match_pos >= cursor_pos:
+                            self._current_match_index = i
+                            break
+                    else:
+                        # If no match found after cursor, wrap to first match
+                        self._current_match_index = 0
+
+                self._goto_match(self._current_match_index)
             else:
                 self.search_result_label.setText("0 件")
         finally:
@@ -582,24 +720,54 @@ class XmlEditorWidget(QWidget):
         self.search_result_label.setText(f"{index + 1}/{len(self._search_matches)} 件")
 
     def find_next(self):
-        """Find next occurrence."""
-        if not self._search_matches:
-            self._find_all(self.search_input.text())
+        """Find next occurrence from cursor position."""
+        search_text = self.search_input.text()
+        if not search_text:
             return
 
-        if self._search_matches:
-            self._current_match_index = (self._current_match_index + 1) % len(self._search_matches)
-            self._goto_match(self._current_match_index)
+        if not self._search_matches:
+            # Initial search - start from cursor position
+            self._find_all(search_text, from_cursor=True)
+            return
+
+        # Find the next match after current cursor position
+        cursor_pos = self.editor.textCursor().position()
+
+        # Find next match starting from cursor position
+        for i, match_pos in enumerate(self._search_matches):
+            if match_pos > cursor_pos:
+                self._current_match_index = i
+                self._goto_match(self._current_match_index)
+                return
+
+        # Wrap around to beginning
+        self._current_match_index = 0
+        self._goto_match(self._current_match_index)
 
     def find_previous(self):
-        """Find previous occurrence."""
-        if not self._search_matches:
-            self._find_all(self.search_input.text())
+        """Find previous occurrence from cursor position."""
+        search_text = self.search_input.text()
+        if not search_text:
             return
 
-        if self._search_matches:
-            self._current_match_index = (self._current_match_index - 1) % len(self._search_matches)
-            self._goto_match(self._current_match_index)
+        if not self._search_matches:
+            # Initial search - start from cursor position
+            self._find_all(search_text, from_cursor=True)
+            return
+
+        # Find the previous match before current cursor position
+        cursor_pos = self.editor.textCursor().position()
+
+        # Find previous match before cursor position
+        for i in range(len(self._search_matches) - 1, -1, -1):
+            if self._search_matches[i] < cursor_pos:
+                self._current_match_index = i
+                self._goto_match(self._current_match_index)
+                return
+
+        # Wrap around to end
+        self._current_match_index = len(self._search_matches) - 1
+        self._goto_match(self._current_match_index)
 
     # ========== XML Formatting ==========
 
@@ -610,8 +778,13 @@ class XmlEditorWidget(QWidget):
             return
 
         try:
-            # Parse and pretty print
+            # Parse the XML
             dom = xml.dom.minidom.parseString(content.encode('utf-8'))
+
+            # Remove existing whitespace-only text nodes to avoid double formatting
+            self._remove_whitespace_nodes(dom)
+
+            # Pretty print
             pretty = dom.toprettyxml(indent="  ")
 
             # Remove extra blank lines and XML declaration if it was added
@@ -644,6 +817,19 @@ class XmlEditorWidget(QWidget):
                 "整形エラー",
                 f"XMLの整形に失敗しました。構文エラーがある可能性があります。\n\n{e}"
             )
+
+    def _remove_whitespace_nodes(self, node):
+        """Remove whitespace-only text nodes from the DOM tree."""
+        remove_list = []
+        for child in node.childNodes:
+            if child.nodeType == xml.dom.minidom.Node.TEXT_NODE:
+                if not child.data.strip():
+                    remove_list.append(child)
+            elif child.hasChildNodes():
+                self._remove_whitespace_nodes(child)
+
+        for child in remove_list:
+            node.removeChild(child)
 
     def _show_format_suggestion(self):
         """Show a suggestion to format the XML for better performance."""
