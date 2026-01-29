@@ -63,3 +63,5 @@ env/
 *.docx.backup
 workdir_*/
 temp_*/
+
+.claude/
