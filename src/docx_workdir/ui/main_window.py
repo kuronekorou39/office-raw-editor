@@ -36,6 +36,7 @@ from ..utils.constants import (
     MSG_EXTRACT_SUCCESS,
     MSG_REPACKAGE_SUCCESS,
     IMAGE_EXTENSIONS,
+    SUPPORTED_EXTENSIONS,
     format_file_size,
 )
 from ..utils.settings import get_settings
@@ -74,7 +75,7 @@ class WelcomeWidget(QWidget):
         layout.addWidget(title)
 
         # Subtitle
-        subtitle = QLabel(".docxファイルの内部構造を編集")
+        subtitle = QLabel(".docx / .xlsx ファイルの内部構造を編集")
         subtitle.setStyleSheet("font-size: 14px; color: #64748B;")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle)
@@ -114,9 +115,9 @@ class WelcomeWidget(QWidget):
         tips_layout.addWidget(tips_title)
 
         tips_text = QLabel(
-            "1. .docxファイルを開くと内部構造がツリー表示されます\n"
+            "1. .docx/.xlsxファイルを開くと内部構造がツリー表示されます\n"
             "2. ファイルをダブルクリックで内蔵エディタで編集\n"
-            "3. 編集後「保存」で.docxとして出力\n\n"
+            "3. 編集後「保存」で元の形式として出力\n\n"
             "🔒 元ファイルは変更されません（コピーで作業）"
         )
         tips_text.setStyleSheet("color: #64748B; line-height: 1.6;")
@@ -526,9 +527,9 @@ class MainWindow(QMainWindow):
         self.btn_refresh.setEnabled(has_workspace)
 
         # Update modified indicator in status bar
-        # This shows if .docx needs to be re-saved (workspace modified)
+        # This shows if file needs to be re-saved (workspace modified)
         if self.workspace.is_modified:
-            self.modified_label.setText("● docx未保存  ")
+            self.modified_label.setText("● 未保存  ")
         else:
             self.modified_label.setText("")
 
@@ -544,7 +545,8 @@ class MainWindow(QMainWindow):
         """Handle drag enter event."""
         if event.mimeData().hasUrls():
             for url in event.mimeData().urls():
-                if url.toLocalFile().lower().endswith('.docx'):
+                file_path = url.toLocalFile().lower()
+                if file_path.endswith('.docx') or file_path.endswith('.xlsx'):
                     event.acceptProposedAction()
                     return
         event.ignore()
@@ -553,7 +555,8 @@ class MainWindow(QMainWindow):
         """Handle drop event."""
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
-            if file_path.lower().endswith('.docx'):
+            file_path_lower = file_path.lower()
+            if file_path_lower.endswith('.docx') or file_path_lower.endswith('.xlsx'):
                 if self._confirm_close_current():
                     self._load_docx(Path(file_path))
                 break
@@ -610,7 +613,7 @@ class MainWindow(QMainWindow):
             ErrorDialog.show_error(self, DIALOG_TITLE_ERROR, MSG_ERROR_SAVE.format(str(e)))
 
     def save_docx_as(self):
-        """Save changes to a new docx file."""
+        """Save changes to a new file."""
         if not self.workspace.current_workspace:
             return
 
@@ -621,20 +624,23 @@ class MainWindow(QMainWindow):
 
         initial_dir = self.settings.get_last_save_dir()
         suggested_name = ""
+        file_type = ".docx"  # Default
         if self.workspace.source_docx:
             if not initial_dir:
                 initial_dir = str(self.workspace.source_docx.parent)
-            suggested_name = f"{self.workspace.source_docx.stem}_edited.docx"
+            file_type = self.workspace.source_docx.suffix.lower()
+            suggested_name = f"{self.workspace.source_docx.stem}_edited{file_type}"
 
-        file_path = FileDialogs.save_docx(self, initial_dir, suggested_name)
+        file_path = FileDialogs.save_docx(self, initial_dir, suggested_name, file_type)
         if not file_path:
             return
 
         output_path = Path(file_path)
         self.settings.set_last_save_dir(str(output_path.parent))
 
-        if not output_path.suffix.lower() == ".docx":
-            output_path = output_path.with_suffix(".docx")
+        # Ensure correct extension
+        if output_path.suffix.lower() not in {".docx", ".xlsx"}:
+            output_path = output_path.with_suffix(file_type)
 
         if output_path.exists():
             if not ConfirmDialog.confirm_overwrite(self, str(output_path)):
@@ -1022,7 +1028,7 @@ class MainWindow(QMainWindow):
             "バージョン情報",
             f"📄 {APP_NAME}\n"
             f"バージョン: {APP_VERSION}\n\n"
-            f".docxファイルの内部構造を編集するためのGUIツール\n\n"
+            f".docx/.xlsxファイルの内部構造を編集するためのGUIツール\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"📌 ショートカットキー:\n"
             f"  Ctrl+O  ファイルを開く\n"

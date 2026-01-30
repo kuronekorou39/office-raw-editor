@@ -20,6 +20,8 @@ from ..utils.constants import (
     DIALOG_TITLE_OPEN,
     DIALOG_TITLE_SAVE,
     FILE_FILTER_DOCX,
+    FILE_FILTER_XLSX,
+    FILE_FILTER_OFFICE,
     FILE_FILTER_ALL,
     MSG_CONFIRM_OVERWRITE,
     MSG_CONFIRM_EXIT,
@@ -172,7 +174,7 @@ class FileDialogs:
 
     @staticmethod
     def open_docx(parent, initial_dir: str = "") -> Optional[str]:
-        """Show dialog to open a docx file.
+        """Show dialog to open an Office file (.docx or .xlsx).
 
         Args:
             parent: Parent widget.
@@ -185,18 +187,19 @@ class FileDialogs:
             parent,
             DIALOG_TITLE_OPEN,
             initial_dir,
-            f"{FILE_FILTER_DOCX};;{FILE_FILTER_ALL}",
+            f"{FILE_FILTER_OFFICE};;{FILE_FILTER_DOCX};;{FILE_FILTER_XLSX};;{FILE_FILTER_ALL}",
         )
         return file_path if file_path else None
 
     @staticmethod
-    def save_docx(parent, initial_dir: str = "", suggested_name: str = "") -> Optional[str]:
-        """Show dialog to save a docx file.
+    def save_docx(parent, initial_dir: str = "", suggested_name: str = "", file_type: str = ".docx") -> Optional[str]:
+        """Show dialog to save an Office file.
 
         Args:
             parent: Parent widget.
             initial_dir: Initial directory to show.
             suggested_name: Suggested file name.
+            file_type: File extension (.docx or .xlsx).
 
         Returns:
             Selected file path, or None if cancelled.
@@ -206,10 +209,16 @@ class FileDialogs:
             from pathlib import Path
             initial_path = str(Path(initial_dir) / suggested_name) if initial_dir else suggested_name
 
+        # Choose filter based on file type
+        if file_type == ".xlsx":
+            filter_str = f"{FILE_FILTER_XLSX};;{FILE_FILTER_ALL}"
+        else:
+            filter_str = f"{FILE_FILTER_DOCX};;{FILE_FILTER_ALL}"
+
         file_path, _ = QFileDialog.getSaveFileName(
             parent,
             DIALOG_TITLE_SAVE,
             initial_path,
-            f"{FILE_FILTER_DOCX};;{FILE_FILTER_ALL}",
+            filter_str,
         )
         return file_path if file_path else None

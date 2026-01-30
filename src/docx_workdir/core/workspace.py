@@ -1,4 +1,4 @@
-"""Workspace management for docx editing."""
+"""Workspace management for Office Open XML file editing (.docx, .xlsx)."""
 
 import hashlib
 import shutil
@@ -13,7 +13,7 @@ from .backup import BackupManager
 
 
 class WorkspaceManager:
-    """Manages the workspace for editing docx files."""
+    """Manages the workspace for editing Office Open XML files (.docx, .xlsx)."""
 
     def __init__(self, base_dir: Optional[Path] = None):
         """Initialize the WorkspaceManager.
@@ -158,10 +158,10 @@ class WorkspaceManager:
         return statuses
 
     def open_docx(self, docx_path: Path, create_backup: bool = True) -> Path:
-        """Open a docx file and extract it to a workspace.
+        """Open an Office file (.docx or .xlsx) and extract it to a workspace.
 
         Args:
-            docx_path: Path to the docx file.
+            docx_path: Path to the Office file.
             create_backup: If True, create a backup before extraction.
 
         Returns:
@@ -169,15 +169,15 @@ class WorkspaceManager:
 
         Raises:
             FileNotFoundError: If the file doesn't exist.
-            ValueError: If the file is not a valid docx.
+            ValueError: If the file is not a valid Office file.
         """
         docx_path = docx_path.resolve()
 
         if not docx_path.exists():
             raise FileNotFoundError(f"File not found: {docx_path}")
 
-        if not DocxHandler.is_valid_docx(docx_path):
-            raise ValueError(f"Invalid docx file: {docx_path}")
+        if not DocxHandler.is_valid_office_file(docx_path):
+            raise ValueError(f"Invalid Office file: {docx_path}")
 
         # Close any existing workspace
         if self._current_workspace:

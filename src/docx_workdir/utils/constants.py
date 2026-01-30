@@ -9,17 +9,28 @@ APP_TITLE = f"{APP_NAME} v{APP_VERSION}"
 
 # File extensions
 DOCX_EXTENSION = ".docx"
+XLSX_EXTENSION = ".xlsx"
+SUPPORTED_EXTENSIONS = {".docx", ".xlsx"}
 BACKUP_SUFFIX = ".backup"
 
 # Workspace settings
 WORKDIR_PREFIX = "workdir_"
 TEMP_PREFIX = "temp_"
 
-# Important docx internal files
+# Important Office Open XML internal files
+CONTENT_TYPES_XML = "[Content_Types].xml"
+
+# DOCX specific
 DOCX_CONTENT_TYPES = "[Content_Types].xml"
 DOCX_RELS_DIR = "_rels"
 DOCX_WORD_DIR = "word"
 DOCX_DOCUMENT_XML = "word/document.xml"
+
+# XLSX specific
+XLSX_RELS_DIR = "_rels"
+XLSX_XL_DIR = "xl"
+XLSX_WORKBOOK_XML = "xl/workbook.xml"
+XLSX_WORKSHEETS_DIR = "xl/worksheets"
 
 # File types for tree icons
 FOLDER_ICON = "folder"
@@ -68,7 +79,7 @@ MSG_ERROR_EXTRACT = "展開に失敗しました: {}"
 MSG_ERROR_REPACKAGE = "再パッケージに失敗しました: {}"
 
 # Dialog titles
-DIALOG_TITLE_OPEN = "docxファイルを開く"
+DIALOG_TITLE_OPEN = "ファイルを開く"
 DIALOG_TITLE_SAVE = "名前を付けて保存"
 DIALOG_TITLE_CONFIRM = "確認"
 DIALOG_TITLE_ERROR = "エラー"
@@ -76,6 +87,8 @@ DIALOG_TITLE_WARNING = "警告"
 
 # File filters
 FILE_FILTER_DOCX = "Word Documents (*.docx)"
+FILE_FILTER_XLSX = "Excel Workbooks (*.xlsx)"
+FILE_FILTER_OFFICE = "Office Files (*.docx *.xlsx)"
 FILE_FILTER_ALL = "All Files (*.*)"
 
 
