@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "docx-workdir"
-version = "0.1.0"
-description = "A GUI application for editing .docx files"
+name = "office-raw-editor"
+version = "0.2.0"
+description = "A GUI application for editing Office Open XML files (Word, Excel, PowerPoint)"
 requires-python = ">=3.10"
 dependencies = [
     "PyQt6>=6.5.0",
@@ -18,7 +18,7 @@ dev = [
 ]
 
 [project.scripts]
-docx-workdir = "docx_workdir.app:main"
+office-raw-editor = "docx_workdir.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,25 +1,35 @@
-# docx-workdir
+# office-raw-editor
 
-.docxファイルの内部構造を編集するためのGUIツール
+Office ファイル (Word/Excel/PowerPoint) の内部構造を編集するためのGUIツール
 
 ## 概要
 
-Word文書(.docx)はZIPアーカイブであり、内部にXMLファイルを含んでいます。このツールは.docxを展開し、内部のXMLファイルを編集して再パッケージすることができます。
+Office文書 (.docx, .xlsx, .pptx など) はZIPアーカイブであり、内部にXMLファイルを含んでいます。このツールはOfficeファイルを展開し、内部のXMLファイルを編集して再パッケージすることができます。
+
+## 対応形式
+
+| 種類 | 拡張子 |
+|------|--------|
+| Word | .docx .docm .dotx .dotm |
+| Excel | .xlsx .xlsm .xltx .xltm |
+| PowerPoint | .pptx .pptm .potx .potm .ppsx .ppsm |
 
 ## 機能
 
-- .docxファイルの展開・再パッケージ
+- Officeファイルの展開・再パッケージ
 - ファイルツリー表示
 - 内蔵XMLエディタ（シンタックスハイライト付き）
 - 外部エディタ連携（VSCode, Notepad++等）
 - 自動バックアップ
+- フォントサイズ変更（Ctrl+ホイール）
+- カーソル位置からの検索
 
 ## インストール
 
 ```bash
 # リポジトリをクローン
-git clone <repository-url>
-cd docx-raw-editor
+git clone https://github.com/kuronekorou39/office-raw-editor.git
+cd office-raw-editor
 
 # 仮想環境を作成
 python -m venv venv
@@ -39,7 +49,7 @@ pip install -e .
 ### Windows (コマンドプロンプト)
 
 ```cmd
-cd C:\projects\docx-raw-editor
+cd C:\projects\office-raw-editor
 venv\Scripts\activate
 python -m docx_workdir
 ```
@@ -47,7 +57,7 @@ python -m docx_workdir
 ### Windows (PowerShell)
 
 ```powershell
-cd C:\projects\docx-raw-editor
+cd C:\projects\office-raw-editor
 .\venv\Scripts\Activate.ps1
 python -m docx_workdir
 ```
@@ -56,17 +66,18 @@ python -m docx_workdir
 
 ```cmd
 python -m docx_workdir path\to\file.docx
+python -m docx_workdir path\to\file.xlsx
+python -m docx_workdir path\to\file.pptx
 ```
 
 ## 使い方
 
-1. **ファイルを開く**: 「開く」ボタンまたは Ctrl+O で.docxファイルを選択
+1. **ファイルを開く**: 「開く」ボタンまたは Ctrl+O でOfficeファイルを選択（ドラッグ＆ドロップも可）
 2. **ファイルを編集**:
-   - ダブルクリック → 内蔵エディタで開く
-   - Ctrl+I → 内蔵エディタで開く
-   - Ctrl+E → 外部エディタで開く
+   - ダブルクリック → エディタ選択ダイアログ
+   - 内蔵エディタまたは外部エディタで編集
 3. **保存**: 内蔵エディタで Ctrl+S で個別ファイルを保存
-4. **再パッケージ**: 「保存」または「名前を付けて保存」で.docxとして出力
+4. **再パッケージ**: 「保存」または「名前を付けて保存」で元の形式として出力
 
 ## キーボードショートカット
 
@@ -75,8 +86,10 @@ python -m docx_workdir path\to\file.docx
 | Ctrl+O | ファイルを開く |
 | Ctrl+S | 保存 |
 | Ctrl+Shift+S | 名前を付けて保存 |
-| Ctrl+I | 内蔵エディタで開く |
-| Ctrl+E | 外部エディタで開く |
+| Ctrl+F | 検索 |
+| F3 / Shift+F3 | 次/前を検索 |
+| Ctrl++ / Ctrl+- | フォント拡大/縮小 |
+| Ctrl+0 | フォントサイズリセット |
 | F5 | ツリー更新 |
 
 ## 設定
@@ -94,7 +107,7 @@ python -m docx_workdir path\to\file.docx
 
 - 編集前に自動でバックアップが作成されます（元ファイルと同じフォルダに `.backup` 付きで保存）
 - 大きなXMLファイルは内蔵エディタの「色付け」をOFFにすると軽くなります
-- .docxの構造を壊すとWordで開けなくなる可能性があります
+- Officeファイルの構造を壊すとアプリケーションで開けなくなる可能性があります
 
 ## 動作環境
 
