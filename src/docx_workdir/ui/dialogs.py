@@ -21,6 +21,7 @@ from ..utils.constants import (
     DIALOG_TITLE_SAVE,
     FILE_FILTER_DOCX,
     FILE_FILTER_XLSX,
+    FILE_FILTER_PPTX,
     FILE_FILTER_OFFICE,
     FILE_FILTER_ALL,
     MSG_CONFIRM_OVERWRITE,
@@ -174,7 +175,9 @@ class FileDialogs:
 
     @staticmethod
     def open_docx(parent, initial_dir: str = "") -> Optional[str]:
-        """Show dialog to open an Office file (.docx or .xlsx).
+        """Show dialog to open an Office file.
+
+        Supports Word, Excel, PowerPoint and their variants.
 
         Args:
             parent: Parent widget.
@@ -187,7 +190,7 @@ class FileDialogs:
             parent,
             DIALOG_TITLE_OPEN,
             initial_dir,
-            f"{FILE_FILTER_OFFICE};;{FILE_FILTER_DOCX};;{FILE_FILTER_XLSX};;{FILE_FILTER_ALL}",
+            f"{FILE_FILTER_OFFICE};;{FILE_FILTER_DOCX};;{FILE_FILTER_XLSX};;{FILE_FILTER_PPTX};;{FILE_FILTER_ALL}",
         )
         return file_path if file_path else None
 
@@ -199,7 +202,7 @@ class FileDialogs:
             parent: Parent widget.
             initial_dir: Initial directory to show.
             suggested_name: Suggested file name.
-            file_type: File extension (.docx or .xlsx).
+            file_type: File extension (.docx, .xlsx, .pptx, etc.).
 
         Returns:
             Selected file path, or None if cancelled.
@@ -210,8 +213,11 @@ class FileDialogs:
             initial_path = str(Path(initial_dir) / suggested_name) if initial_dir else suggested_name
 
         # Choose filter based on file type
-        if file_type == ".xlsx":
+        file_type_lower = file_type.lower()
+        if file_type_lower in {".xlsx", ".xlsm", ".xltx", ".xltm"}:
             filter_str = f"{FILE_FILTER_XLSX};;{FILE_FILTER_ALL}"
+        elif file_type_lower in {".pptx", ".pptm", ".potx", ".potm", ".ppsx", ".ppsm"}:
+            filter_str = f"{FILE_FILTER_PPTX};;{FILE_FILTER_ALL}"
         else:
             filter_str = f"{FILE_FILTER_DOCX};;{FILE_FILTER_ALL}"
 

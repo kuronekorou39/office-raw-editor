@@ -1,4 +1,7 @@
-"""Workspace management for Office Open XML file editing (.docx, .xlsx)."""
+"""Workspace management for Office Open XML file editing.
+
+Supports Word (.docx), Excel (.xlsx), PowerPoint (.pptx) and their variants.
+"""
 
 import hashlib
 import shutil

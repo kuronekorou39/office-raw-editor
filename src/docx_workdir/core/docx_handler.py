@@ -1,13 +1,20 @@
 """Handler for Office Open XML file operations (ZIP extraction and repackaging).
 
-Supports both .docx (Word) and .xlsx (Excel) files.
+Supports Word (.docx), Excel (.xlsx), PowerPoint (.pptx) and their variants.
 """
 
 import zipfile
 from pathlib import Path
 
-# Supported file extensions
-SUPPORTED_EXTENSIONS = {".docx", ".xlsx"}
+# Supported file extensions - Office Open XML formats
+SUPPORTED_EXTENSIONS = {
+    # Word
+    ".docx", ".docm", ".dotx", ".dotm",
+    # Excel
+    ".xlsx", ".xlsm", ".xltx", ".xltm",
+    # PowerPoint
+    ".pptx", ".pptm", ".potx", ".potm", ".ppsx", ".ppsm",
+}
 
 
 class DocxHandler:
@@ -48,30 +55,12 @@ class DocxHandler:
             return False
 
     @staticmethod
-    def is_valid_xlsx(file_path: Path) -> bool:
-        """Check if a file is a valid .xlsx file.
-
-        Args:
-            file_path: Path to the file to check.
-
-        Returns:
-            True if the file is a valid .xlsx (ZIP) file.
-        """
-        if not file_path.exists():
-            return False
-        if file_path.suffix.lower() != ".xlsx":
-            return False
-        try:
-            with zipfile.ZipFile(file_path, 'r') as zf:
-                # Check for essential xlsx files
-                namelist = zf.namelist()
-                return "[Content_Types].xml" in namelist
-        except (zipfile.BadZipFile, Exception):
-            return False
-
-    @staticmethod
     def is_valid_office_file(file_path: Path) -> bool:
-        """Check if a file is a valid Office Open XML file (.docx or .xlsx).
+        """Check if a file is a valid Office Open XML file.
+
+        Supports Word (.docx, .docm, .dotx, .dotm),
+        Excel (.xlsx, .xlsm, .xltx, .xltm),
+        PowerPoint (.pptx, .pptm, .potx, .potm, .ppsx, .ppsm).
 
         Args:
             file_path: Path to the file to check.
@@ -81,12 +70,18 @@ class DocxHandler:
         """
         if not file_path.exists():
             return False
+
         suffix = file_path.suffix.lower()
-        if suffix == ".docx":
-            return DocxHandler.is_valid_docx(file_path)
-        elif suffix == ".xlsx":
-            return DocxHandler.is_valid_xlsx(file_path)
-        return False
+        if suffix not in SUPPORTED_EXTENSIONS:
+            return False
+
+        try:
+            with zipfile.ZipFile(file_path, 'r') as zf:
+                # All Office Open XML files must have [Content_Types].xml
+                namelist = zf.namelist()
+                return "[Content_Types].xml" in namelist
+        except (zipfile.BadZipFile, Exception):
+            return False
 
     @staticmethod
     def extract(docx_path: Path, output_dir: Path) -> bool:

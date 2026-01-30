@@ -69,13 +69,13 @@ class WelcomeWidget(QWidget):
         layout.addSpacing(16)
 
         # Title
-        title = QLabel("docx-workdir")
+        title = QLabel("office-raw-editor")
         title.setStyleSheet("font-size: 24px; font-weight: bold; color: #1E293B;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
         # Subtitle
-        subtitle = QLabel(".docx / .xlsx ファイルの内部構造を編集")
+        subtitle = QLabel("Office ファイル (Word/Excel/PowerPoint) の内部構造を編集")
         subtitle.setStyleSheet("font-size: 14px; color: #64748B;")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle)
@@ -115,10 +115,11 @@ class WelcomeWidget(QWidget):
         tips_layout.addWidget(tips_title)
 
         tips_text = QLabel(
-            "1. .docx/.xlsxファイルを開くと内部構造がツリー表示されます\n"
+            "1. Officeファイルを開くと内部構造がツリー表示されます\n"
             "2. ファイルをダブルクリックで内蔵エディタで編集\n"
             "3. 編集後「保存」で元の形式として出力\n\n"
-            "🔒 元ファイルは変更されません（コピーで作業）"
+            "🔒 元ファイルは変更されません（コピーで作業）\n"
+            "📁 対応形式: Word / Excel / PowerPoint"
         )
         tips_text.setStyleSheet("color: #64748B; line-height: 1.6;")
         tips_layout.addWidget(tips_text)
@@ -545,8 +546,8 @@ class MainWindow(QMainWindow):
         """Handle drag enter event."""
         if event.mimeData().hasUrls():
             for url in event.mimeData().urls():
-                file_path = url.toLocalFile().lower()
-                if file_path.endswith('.docx') or file_path.endswith('.xlsx'):
+                file_path = Path(url.toLocalFile())
+                if file_path.suffix.lower() in SUPPORTED_EXTENSIONS:
                     event.acceptProposedAction()
                     return
         event.ignore()
@@ -554,11 +555,10 @@ class MainWindow(QMainWindow):
     def dropEvent(self, event):
         """Handle drop event."""
         for url in event.mimeData().urls():
-            file_path = url.toLocalFile()
-            file_path_lower = file_path.lower()
-            if file_path_lower.endswith('.docx') or file_path_lower.endswith('.xlsx'):
+            file_path = Path(url.toLocalFile())
+            if file_path.suffix.lower() in SUPPORTED_EXTENSIONS:
                 if self._confirm_close_current():
-                    self._load_docx(Path(file_path))
+                    self._load_docx(file_path)
                 break
 
     # ===== File Operations =====
@@ -639,7 +639,7 @@ class MainWindow(QMainWindow):
         self.settings.set_last_save_dir(str(output_path.parent))
 
         # Ensure correct extension
-        if output_path.suffix.lower() not in {".docx", ".xlsx"}:
+        if output_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
             output_path = output_path.with_suffix(file_type)
 
         if output_path.exists():
@@ -1028,13 +1028,15 @@ class MainWindow(QMainWindow):
             "バージョン情報",
             f"📄 {APP_NAME}\n"
             f"バージョン: {APP_VERSION}\n\n"
-            f".docx/.xlsxファイルの内部構造を編集するためのGUIツール\n\n"
+            f"Office Open XML ファイルの内部構造を編集するGUIツール\n\n"
+            f"📁 対応形式:\n"
+            f"  Word: .docx .docm .dotx .dotm\n"
+            f"  Excel: .xlsx .xlsm .xltx .xltm\n"
+            f"  PowerPoint: .pptx .pptm .potx .potm .ppsx .ppsm\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"📌 ショートカットキー:\n"
             f"  Ctrl+O  ファイルを開く\n"
             f"  Ctrl+S  保存\n"
-            f"  Ctrl+I  内蔵エディタで開く\n"
-            f"  Ctrl+E  外部エディタで開く\n"
             f"  Ctrl+F  検索",
         )
 
