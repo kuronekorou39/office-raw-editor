@@ -1,4 +1,4 @@
-"""Modern styles for docx-workdir application."""
+"""Modern styles for office-raw-editor application."""
 
 # Color palette
 COLORS = {

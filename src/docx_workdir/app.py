@@ -1,4 +1,4 @@
-"""Main application class for docx-workdir."""
+"""Main application class for office-raw-editor."""
 
 import sys
 from pathlib import Path
@@ -8,11 +8,11 @@ from PyQt6.QtWidgets import QApplication
 
 from .ui.main_window import MainWindow
 from .ui.styles import APP_STYLESHEET
-from .utils.constants import APP_NAME
+from .utils.constants import APP_NAME, SUPPORTED_EXTENSIONS
 
 
-class DocxWorkdirApp:
-    """Main application class."""
+class OfficeRawEditorApp:
+    """Main application class for editing Office Open XML files."""
 
     def __init__(self, argv: Optional[list[str]] = None):
         """Initialize the application.
@@ -25,7 +25,7 @@ class DocxWorkdirApp:
 
         self.app = QApplication(argv)
         self.app.setApplicationName(APP_NAME)
-        self.app.setOrganizationName("docx-workdir")
+        self.app.setOrganizationName("office-raw-editor")
 
         # Set application style
         self.app.setStyle("Fusion")
@@ -45,9 +45,8 @@ class DocxWorkdirApp:
         """
         for arg in args:
             if not arg.startswith("-"):
-                # Assume it's a file path
                 path = Path(arg)
-                if path.exists() and path.suffix.lower() == ".docx":
+                if path.exists() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
                     self._initial_file = path
                 break
 
@@ -69,7 +68,7 @@ class DocxWorkdirApp:
 
 def main():
     """Main entry point."""
-    app = DocxWorkdirApp()
+    app = OfficeRawEditorApp()
     sys.exit(app.run())
 
 

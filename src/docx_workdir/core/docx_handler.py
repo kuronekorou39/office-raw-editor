@@ -6,19 +6,11 @@ Supports Word (.docx), Excel (.xlsx), PowerPoint (.pptx) and their variants.
 import zipfile
 from pathlib import Path
 
-# Supported file extensions - Office Open XML formats
-SUPPORTED_EXTENSIONS = {
-    # Word
-    ".docx", ".docm", ".dotx", ".dotm",
-    # Excel
-    ".xlsx", ".xlsm", ".xltx", ".xltm",
-    # PowerPoint
-    ".pptx", ".pptm", ".potx", ".potm", ".ppsx", ".ppsm",
-}
+from ..utils.constants import SUPPORTED_EXTENSIONS
 
 
-class DocxHandler:
-    """Handles extraction and repackaging of Office Open XML files (.docx, .xlsx)."""
+class OfficeFileHandler:
+    """Handles extraction and repackaging of Office Open XML files."""
 
     @staticmethod
     def is_supported_extension(file_path: Path) -> bool:
@@ -33,29 +25,7 @@ class DocxHandler:
         return file_path.suffix.lower() in SUPPORTED_EXTENSIONS
 
     @staticmethod
-    def is_valid_docx(file_path: Path) -> bool:
-        """Check if a file is a valid .docx file.
-
-        Args:
-            file_path: Path to the file to check.
-
-        Returns:
-            True if the file is a valid .docx (ZIP) file.
-        """
-        if not file_path.exists():
-            return False
-        if file_path.suffix.lower() != ".docx":
-            return False
-        try:
-            with zipfile.ZipFile(file_path, 'r') as zf:
-                # Check for essential docx files
-                namelist = zf.namelist()
-                return "[Content_Types].xml" in namelist
-        except (zipfile.BadZipFile, Exception):
-            return False
-
-    @staticmethod
-    def is_valid_office_file(file_path: Path) -> bool:
+    def is_valid_file(file_path: Path) -> bool:
         """Check if a file is a valid Office Open XML file.
 
         Supports Word (.docx, .docm, .dotx, .dotm),
@@ -78,60 +48,59 @@ class DocxHandler:
         try:
             with zipfile.ZipFile(file_path, 'r') as zf:
                 # All Office Open XML files must have [Content_Types].xml
-                namelist = zf.namelist()
-                return "[Content_Types].xml" in namelist
+                return "[Content_Types].xml" in zf.namelist()
         except (zipfile.BadZipFile, Exception):
             return False
 
     @staticmethod
-    def extract(docx_path: Path, output_dir: Path) -> bool:
-        """Extract a .docx file to a directory.
+    def extract(file_path: Path, output_dir: Path) -> bool:
+        """Extract an Office file to a directory.
 
         Args:
-            docx_path: Path to the .docx file.
+            file_path: Path to the Office file.
             output_dir: Directory to extract contents to.
 
         Returns:
             True if extraction was successful.
 
         Raises:
-            FileNotFoundError: If the docx file doesn't exist.
+            FileNotFoundError: If the file doesn't exist.
             zipfile.BadZipFile: If the file is not a valid ZIP.
             PermissionError: If permission denied.
         """
-        if not docx_path.exists():
-            raise FileNotFoundError(f"File not found: {docx_path}")
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        with zipfile.ZipFile(docx_path, 'r') as zf:
+        with zipfile.ZipFile(file_path, 'r') as zf:
             zf.extractall(output_dir)
 
         return True
 
     @staticmethod
     def repackage(source_dir: Path, output_path: Path) -> bool:
-        """Repackage a directory into a .docx file.
+        """Repackage a directory into an Office file.
 
         Args:
-            source_dir: Directory containing the extracted docx contents.
-            output_path: Path for the output .docx file.
+            source_dir: Directory containing the extracted contents.
+            output_path: Path for the output file.
 
         Returns:
             True if repackaging was successful.
 
         Raises:
             FileNotFoundError: If the source directory doesn't exist.
-            ValueError: If the source directory doesn't contain valid docx structure.
+            ValueError: If the source directory doesn't contain valid structure.
             PermissionError: If permission denied.
         """
         if not source_dir.exists():
             raise FileNotFoundError(f"Directory not found: {source_dir}")
 
-        # Verify essential docx files exist
+        # Verify essential files exist
         content_types = source_dir / "[Content_Types].xml"
         if not content_types.exists():
-            raise ValueError(f"Invalid docx structure: missing [Content_Types].xml")
+            raise ValueError("Invalid Office file structure: missing [Content_Types].xml")
 
         # Create parent directory if needed
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -145,28 +114,32 @@ class DocxHandler:
         return True
 
     @staticmethod
-    def get_file_list(docx_path: Path) -> list[str]:
-        """Get a list of files in a .docx archive.
+    def get_file_list(file_path: Path) -> list[str]:
+        """Get a list of files in an Office archive.
 
         Args:
-            docx_path: Path to the .docx file.
+            file_path: Path to the Office file.
 
         Returns:
             List of file paths within the archive.
         """
-        with zipfile.ZipFile(docx_path, 'r') as zf:
+        with zipfile.ZipFile(file_path, 'r') as zf:
             return zf.namelist()
 
     @staticmethod
-    def read_file(docx_path: Path, internal_path: str) -> bytes:
-        """Read a specific file from within a .docx archive.
+    def read_file(file_path: Path, internal_path: str) -> bytes:
+        """Read a specific file from within an Office archive.
 
         Args:
-            docx_path: Path to the .docx file.
+            file_path: Path to the Office file.
             internal_path: Path of the file within the archive.
 
         Returns:
             Contents of the file as bytes.
         """
-        with zipfile.ZipFile(docx_path, 'r') as zf:
+        with zipfile.ZipFile(file_path, 'r') as zf:
             return zf.read(internal_path)
+
+
+# Alias for backward compatibility
+DocxHandler = OfficeFileHandler

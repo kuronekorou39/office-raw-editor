@@ -1,4 +1,4 @@
-"""UI components for docx-workdir."""
+"""UI components for office-raw-editor."""
 
 from .main_window import MainWindow
 from .file_tree import FileTreeWidget

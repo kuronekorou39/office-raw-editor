@@ -1,4 +1,4 @@
-"""Settings dialog for docx-workdir application."""
+"""Settings dialog for office-raw-editor application."""
 
 import os
 

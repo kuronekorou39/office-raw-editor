@@ -1,4 +1,4 @@
-"""Settings management for docx-workdir application."""
+"""Settings management for office-raw-editor application."""
 
 from typing import Optional
 

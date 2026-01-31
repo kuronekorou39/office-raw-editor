@@ -1,4 +1,4 @@
-"""Backup management for .docx files."""
+"""Backup management for Office Open XML files."""
 
 import shutil
 from datetime import datetime
@@ -9,7 +9,7 @@ from ..utils.constants import BACKUP_SUFFIX
 
 
 class BackupManager:
-    """Manages backup creation for .docx files."""
+    """Manages backup creation for Office Open XML files."""
 
     def __init__(self, backup_dir: Optional[Path] = None):
         """Initialize the BackupManager.

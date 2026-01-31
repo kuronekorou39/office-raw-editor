@@ -1,4 +1,4 @@
-"""Dialog components for docx-workdir application."""
+"""Dialog components for office-raw-editor application."""
 
 from typing import Optional
 

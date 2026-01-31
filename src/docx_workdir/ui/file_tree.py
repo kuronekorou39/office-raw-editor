@@ -1,4 +1,4 @@
-"""File tree widget for displaying docx contents."""
+"""File tree widget for displaying Office file contents."""
 
 from pathlib import Path
 from typing import Optional

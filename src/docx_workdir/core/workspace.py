@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Optional
 
 from ..utils.constants import WORKDIR_PREFIX
-from .docx_handler import DocxHandler
+from .docx_handler import OfficeFileHandler
 from .backup import BackupManager
 
 
 class WorkspaceManager:
-    """Manages the workspace for editing Office Open XML files (.docx, .xlsx)."""
+    """Manages the workspace for editing Office Open XML files."""
 
     def __init__(self, base_dir: Optional[Path] = None):
         """Initialize the WorkspaceManager.
@@ -28,14 +28,14 @@ class WorkspaceManager:
         if base_dir:
             self.base_dir = base_dir
         else:
-            self.base_dir = Path(tempfile.gettempdir()) / "docx_workdir"
+            self.base_dir = Path(tempfile.gettempdir()) / "office_raw_editor"
 
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        self.docx_handler = DocxHandler()
+        self.file_handler = OfficeFileHandler()
         self.backup_manager = BackupManager()
 
         self._current_workspace: Optional[Path] = None
-        self._source_docx: Optional[Path] = None
+        self._source_file: Optional[Path] = None
         self._is_modified: bool = False
         self._file_hashes: dict[str, str] = {}
 
@@ -45,9 +45,15 @@ class WorkspaceManager:
         return self._current_workspace
 
     @property
+    def source_file(self) -> Optional[Path]:
+        """Get the source file path."""
+        return self._source_file
+
+    # Alias for backward compatibility
+    @property
     def source_docx(self) -> Optional[Path]:
-        """Get the source docx file path."""
-        return self._source_docx
+        """Get the source file path (alias for source_file)."""
+        return self._source_file
 
     @property
     def is_modified(self) -> bool:
@@ -59,17 +65,17 @@ class WorkspaceManager:
         """Set the modified state."""
         self._is_modified = value
 
-    def _generate_workspace_name(self, docx_path: Path) -> str:
-        """Generate a unique workspace name based on the docx file.
+    def _generate_workspace_name(self, file_path: Path) -> str:
+        """Generate a unique workspace name based on the file.
 
         Args:
-            docx_path: Path to the docx file.
+            file_path: Path to the file.
 
         Returns:
             Unique workspace directory name.
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        return f"{WORKDIR_PREFIX}{docx_path.stem}_{timestamp}"
+        return f"{WORKDIR_PREFIX}{file_path.stem}_{timestamp}"
 
     def _compute_file_hash(self, file_path: Path) -> str:
         """Compute MD5 hash of a file.
@@ -115,10 +121,7 @@ class WorkspaceManager:
 
         # Check for modified or new files
         for path, hash_val in current_hashes.items():
-            if path not in self._file_hashes:
-                self._is_modified = True
-                return True
-            if self._file_hashes[path] != hash_val:
+            if path not in self._file_hashes or self._file_hashes[path] != hash_val:
                 self._is_modified = True
                 return True
 
@@ -149,22 +152,22 @@ class WorkspaceManager:
         # Check for modified or added files
         for path, hash_val in current_hashes.items():
             if path not in self._file_hashes:
-                statuses[path] = 'A'  # Added
+                statuses[path] = 'A'
             elif self._file_hashes[path] != hash_val:
-                statuses[path] = 'M'  # Modified
+                statuses[path] = 'M'
 
         # Check for deleted files
         for path in self._file_hashes:
             if path not in current_hashes:
-                statuses[path] = 'D'  # Deleted
+                statuses[path] = 'D'
 
         return statuses
 
-    def open_docx(self, docx_path: Path, create_backup: bool = True) -> Path:
-        """Open an Office file (.docx or .xlsx) and extract it to a workspace.
+    def open_file(self, file_path: Path, create_backup: bool = True) -> Path:
+        """Open an Office file and extract it to a workspace.
 
         Args:
-            docx_path: Path to the Office file.
+            file_path: Path to the Office file.
             create_backup: If True, create a backup before extraction.
 
         Returns:
@@ -174,13 +177,13 @@ class WorkspaceManager:
             FileNotFoundError: If the file doesn't exist.
             ValueError: If the file is not a valid Office file.
         """
-        docx_path = docx_path.resolve()
+        file_path = file_path.resolve()
 
-        if not docx_path.exists():
-            raise FileNotFoundError(f"File not found: {docx_path}")
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-        if not DocxHandler.is_valid_office_file(docx_path):
-            raise ValueError(f"Invalid Office file: {docx_path}")
+        if not OfficeFileHandler.is_valid_file(file_path):
+            raise ValueError(f"Invalid Office file: {file_path}")
 
         # Close any existing workspace
         if self._current_workspace:
@@ -188,28 +191,33 @@ class WorkspaceManager:
 
         # Create backup
         if create_backup:
-            self.backup_manager.create_backup(docx_path)
+            self.backup_manager.create_backup(file_path)
 
         # Create workspace
-        workspace_name = self._generate_workspace_name(docx_path)
+        workspace_name = self._generate_workspace_name(file_path)
         workspace_path = self.base_dir / workspace_name
         workspace_path.mkdir(parents=True, exist_ok=True)
 
-        # Extract docx
-        DocxHandler.extract(docx_path, workspace_path)
+        # Extract file
+        OfficeFileHandler.extract(file_path, workspace_path)
 
         self._current_workspace = workspace_path
-        self._source_docx = docx_path
+        self._source_file = file_path
         self._is_modified = False
         self._file_hashes = self._snapshot_hashes()
 
         return workspace_path
 
+    # Alias for backward compatibility
+    def open_docx(self, file_path: Path, create_backup: bool = True) -> Path:
+        """Open an Office file (alias for open_file)."""
+        return self.open_file(file_path, create_backup)
+
     def save_as(self, output_path: Path, overwrite: bool = False) -> Path:
-        """Save the workspace as a new docx file.
+        """Save the workspace as a new file.
 
         Args:
-            output_path: Path for the output docx file.
+            output_path: Path for the output file.
             overwrite: If True, allow overwriting existing files.
 
         Returns:
@@ -227,14 +235,14 @@ class WorkspaceManager:
         if output_path.exists() and not overwrite:
             raise FileExistsError(f"File already exists: {output_path}")
 
-        DocxHandler.repackage(self._current_workspace, output_path)
+        OfficeFileHandler.repackage(self._current_workspace, output_path)
         self._is_modified = False
         self._file_hashes = self._snapshot_hashes()
 
         return output_path
 
     def save(self) -> Path:
-        """Save changes back to the original docx file.
+        """Save changes back to the original file.
 
         Returns:
             Path to the saved file.
@@ -242,10 +250,10 @@ class WorkspaceManager:
         Raises:
             RuntimeError: If no workspace is open or no source file.
         """
-        if not self._source_docx:
+        if not self._source_file:
             raise RuntimeError("No source file to save to")
 
-        return self.save_as(self._source_docx, overwrite=True)
+        return self.save_as(self._source_file, overwrite=True)
 
     def close(self) -> None:
         """Close the current workspace and clean up."""
@@ -256,7 +264,7 @@ class WorkspaceManager:
                 pass
 
         self._current_workspace = None
-        self._source_docx = None
+        self._source_file = None
         self._is_modified = False
         self._file_hashes = {}
 
@@ -296,7 +304,7 @@ class WorkspaceManager:
         return self._current_workspace / relative_path
 
     def revert_file(self, relative_path: str) -> bool:
-        """Revert a file to its original state from the source docx.
+        """Revert a file to its original state from the source file.
 
         Args:
             relative_path: Path relative to workspace root.
@@ -305,17 +313,16 @@ class WorkspaceManager:
             True if revert was successful.
 
         Raises:
-            RuntimeError: If no workspace or source docx is open.
+            RuntimeError: If no workspace or source file is open.
             ValueError: If the file cannot be reverted.
         """
-        if not self._current_workspace or not self._source_docx:
-            raise RuntimeError("No workspace or source docx is open")
+        if not self._current_workspace or not self._source_file:
+            raise RuntimeError("No workspace or source file is open")
 
         # Normalize path separators for zip (always use forward slash)
         zip_path = relative_path.replace('\\', '/')
         abs_path = self._current_workspace / relative_path
 
-        # Determine file status
         status = self.get_file_statuses().get(relative_path, '')
 
         if status == 'A':
@@ -324,20 +331,17 @@ class WorkspaceManager:
                 abs_path.unlink()
             return True
 
-        elif status == 'M' or status == 'D':
-            # Modified or Deleted - restore from original docx
+        elif status in ('M', 'D'):
+            # Modified or Deleted - restore from original file
             try:
-                content = DocxHandler.read_file(self._source_docx, zip_path)
-                # Ensure parent directory exists
+                content = OfficeFileHandler.read_file(self._source_file, zip_path)
                 abs_path.parent.mkdir(parents=True, exist_ok=True)
                 abs_path.write_bytes(content)
                 return True
             except KeyError:
-                raise ValueError(f"File not found in original docx: {relative_path}")
+                raise ValueError(f"File not found in original: {relative_path}")
 
-        else:
-            # No changes to revert
-            return False
+        return False
 
     def can_revert_file(self, relative_path: str) -> bool:
         """Check if a file can be reverted.

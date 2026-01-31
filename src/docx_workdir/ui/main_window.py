@@ -1,4 +1,4 @@
-"""Main window for docx-workdir application."""
+"""Main window for office-raw-editor application."""
 
 import os
 import subprocess

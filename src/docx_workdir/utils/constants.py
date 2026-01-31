@@ -1,4 +1,4 @@
-"""Constants for docx-workdir application."""
+"""Constants for office-raw-editor application."""
 
 from pathlib import Path
 
@@ -41,18 +41,12 @@ TEMP_PREFIX = "temp_"
 
 # Important Office Open XML internal files
 CONTENT_TYPES_XML = "[Content_Types].xml"
+RELS_DIR = "_rels"
 
-# DOCX specific
-DOCX_CONTENT_TYPES = "[Content_Types].xml"
-DOCX_RELS_DIR = "_rels"
-DOCX_WORD_DIR = "word"
-DOCX_DOCUMENT_XML = "word/document.xml"
-
-# XLSX specific
-XLSX_RELS_DIR = "_rels"
-XLSX_XL_DIR = "xl"
-XLSX_WORKBOOK_XML = "xl/workbook.xml"
-XLSX_WORKSHEETS_DIR = "xl/worksheets"
+# Format-specific main content directories
+WORD_DIR = "word"
+EXCEL_DIR = "xl"
+POWERPOINT_DIR = "ppt"
 
 # File types for tree icons
 FOLDER_ICON = "folder"

@@ -1,7 +1,7 @@
-"""Core functionality for docx-workdir."""
+"""Core functionality for office-raw-editor."""
 
-from .docx_handler import DocxHandler
+from .docx_handler import OfficeFileHandler
 from .backup import BackupManager
 from .workspace import WorkspaceManager
 
-__all__ = ["DocxHandler", "BackupManager", "WorkspaceManager"]
+__all__ = ["OfficeFileHandler", "BackupManager", "WorkspaceManager"]

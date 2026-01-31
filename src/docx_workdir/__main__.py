@@ -1,4 +1,4 @@
-"""Entry point for docx-workdir application."""
+"""Entry point for office-raw-editor application."""
 
 from .app import main
 
