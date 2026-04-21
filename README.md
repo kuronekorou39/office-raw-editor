@@ -1,5 +1,9 @@
 # office-raw-editor
 
+<p align="center">
+  <img src="docs/images/tree.png" width="720" alt="office-raw-editor">
+</p>
+
 Office ファイル (Word/Excel/PowerPoint) の内部構造を編集するためのGUIツール
 
 ## 概要
