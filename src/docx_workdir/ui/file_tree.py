@@ -43,6 +43,9 @@ class FileTreeWidget(QTreeWidget):
         'D': '#DC2626',  # Deleted - Red
     }
 
+    # Color used to highlight files containing the search string
+    SEARCH_HIGHLIGHT_COLOR = '#FEF08A'  # 薄い黄色
+
     def __init__(self, parent=None):
         """Initialize the FileTreeWidget.
 
@@ -53,6 +56,8 @@ class FileTreeWidget(QTreeWidget):
         self._workspace_path: Optional[Path] = None
         self._file_statuses: dict[str, str] = {}
         self._items_map: dict[str, QTreeWidgetItem] = {}
+        self._search_matches: set[str] = set()
+        self._search_filter_active: bool = False
         self._setup_ui()
         self._connect_signals()
 
@@ -279,6 +284,10 @@ class FileTreeWidget(QTreeWidget):
         # Expand important directories
         self.expandAll()
 
+        # Re-apply search highlight/filter if active
+        if self._search_matches:
+            self._apply_search_visuals()
+
     def _apply_status_to_item(self, item: QTreeWidgetItem, status: str, is_dir: bool):
         """Apply status styling to a tree item.
 
@@ -348,10 +357,67 @@ class FileTreeWidget(QTreeWidget):
 
             self._apply_status_to_item(item, status, is_dir)
 
+    def apply_search(self, matches: set[str], filter_active: bool):
+        """Apply search results: highlight matched files and optionally hide non-matches.
+
+        Args:
+            matches: Set of relative paths (str) that contain the search string.
+            filter_active: If True, hide items that do not match (and folders with
+                no matching descendants). If False, only highlight.
+        """
+        self._search_matches = set(matches)
+        self._search_filter_active = filter_active
+        self._apply_search_visuals()
+
+    def clear_search(self):
+        """Clear search highlighting and unhide all items."""
+        self._search_matches = set()
+        self._search_filter_active = False
+        self._apply_search_visuals()
+
+    def _apply_search_visuals(self):
+        """Apply highlight color and visibility based on current search state."""
+        from PyQt6.QtGui import QBrush, QColor
+
+        highlight = QBrush(QColor(self.SEARCH_HIGHLIGHT_COLOR))
+        no_brush = QBrush()
+
+        has_search = bool(self._search_matches)
+
+        # First pass: set highlight on files
+        for rel_path, item in self._items_map.items():
+            abs_path = self._workspace_path / rel_path if self._workspace_path else None
+            is_dir = abs_path.is_dir() if abs_path and abs_path.exists() else False
+
+            if not is_dir and has_search and rel_path in self._search_matches:
+                for col in range(self.columnCount()):
+                    item.setBackground(col, highlight)
+            else:
+                for col in range(self.columnCount()):
+                    item.setBackground(col, no_brush)
+
+        # Second pass: handle visibility for filter mode
+        if self._search_filter_active and has_search:
+            # Hide items not in matches; un-hide ancestors of matches
+            visible_paths: set[str] = set()
+            for match in self._search_matches:
+                parts = Path(match).parts
+                for i in range(len(parts)):
+                    visible_paths.add(str(Path(*parts[:i + 1])))
+
+            for rel_path, item in self._items_map.items():
+                item.setHidden(rel_path not in visible_paths)
+        else:
+            # Show all
+            for item in self._items_map.values():
+                item.setHidden(False)
+
     def clear_workspace(self):
         """Clear the tree and reset workspace path."""
         self.clear()
         self._workspace_path = None
+        self._search_matches = set()
+        self._search_filter_active = False
 
     def _on_item_double_clicked(self, item: QTreeWidgetItem, column: int):
         """Handle double-click on a tree item.

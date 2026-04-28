@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtCore import Qt, QTimer, QSize
-from PyQt6.QtGui import QAction, QKeySequence, QCloseEvent
+from PyQt6.QtGui import QAction, QKeySequence, QCloseEvent, QShortcut
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -21,6 +21,9 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QFrame,
     QSizePolicy,
+    QLineEdit,
+    QCheckBox,
+    QApplication,
 )
 
 from ..core.workspace import WorkspaceManager
@@ -242,6 +245,40 @@ class MainWindow(QMainWindow):
             padding: 8px 4px;
         """)
         left_layout.addWidget(self.tree_header)
+
+        # Content search bar (search inside files)
+        search_bar = QHBoxLayout()
+        search_bar.setContentsMargins(4, 0, 4, 0)
+        search_bar.setSpacing(4)
+
+        self.content_search_input = QLineEdit()
+        self.content_search_input.setPlaceholderText("ファイル内を検索 (Ctrl+Shift+F)")
+        self.content_search_input.setClearButtonEnabled(True)
+        self.content_search_input.returnPressed.connect(self._run_content_search)
+        search_bar.addWidget(self.content_search_input, 1)
+
+        self.btn_content_search = QPushButton("🔍")
+        self.btn_content_search.setToolTip("検索を実行")
+        self.btn_content_search.setFixedWidth(30)
+        self.btn_content_search.clicked.connect(self._run_content_search)
+        search_bar.addWidget(self.btn_content_search)
+
+        self.chk_content_filter = QCheckBox("非該当を非表示")
+        self.chk_content_filter.setToolTip("ヒットしないファイルをツリーから隠す")
+        self.chk_content_filter.toggled.connect(self._on_content_filter_toggled)
+        search_bar.addWidget(self.chk_content_filter)
+
+        self.btn_content_search_clear = QPushButton("✖")
+        self.btn_content_search_clear.setToolTip("検索結果をクリア")
+        self.btn_content_search_clear.setFixedWidth(30)
+        self.btn_content_search_clear.clicked.connect(self._clear_content_search)
+        search_bar.addWidget(self.btn_content_search_clear)
+
+        left_layout.addLayout(search_bar)
+
+        # Ctrl+Shift+F to focus the search input
+        self._shortcut_content_search = QShortcut(QKeySequence("Ctrl+Shift+F"), self)
+        self._shortcut_content_search.activated.connect(self._focus_content_search)
 
         self.file_tree = FileTreeWidget()
         left_layout.addWidget(self.file_tree)
@@ -580,6 +617,8 @@ class MainWindow(QMainWindow):
         """Load a docx file into the workspace."""
         try:
             workspace_path = self.workspace.open_docx(docx_path)
+            self.content_search_input.clear()
+            self.file_tree.clear_search()
             self.file_tree.load_workspace(workspace_path)
             self._update_info_banner(docx_path, workspace_path)
             self._set_status(f"展開完了: {docx_path.name}")
@@ -660,6 +699,7 @@ class MainWindow(QMainWindow):
 
         self.workspace.close()
         self.file_tree.clear_workspace()
+        self.content_search_input.clear()
         self.info_label.setText("ファイルを選択してください")
         self.info_text.clear()
         self.image_scroll.hide()
@@ -1014,6 +1054,101 @@ class MainWindow(QMainWindow):
             return True
         else:
             return True
+
+    # ===== Content search (search inside files) =====
+
+    # Extensions known to be binary — skipped during content search
+    _BINARY_SEARCH_SKIP = {
+        '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico',
+        '.emf', '.wmf', '.tif', '.tiff',
+        '.bin', '.zip', '.gz', '.7z',
+    }
+
+    # Maximum file size to scan (10 MB)
+    _CONTENT_SEARCH_MAX_BYTES = 10 * 1024 * 1024
+
+    def _focus_content_search(self):
+        """Focus the content search input (Ctrl+Shift+F)."""
+        if self.workspace.current_workspace:
+            self.content_search_input.setFocus()
+            self.content_search_input.selectAll()
+
+    def _run_content_search(self):
+        """Search workspace files for the query string and update the tree."""
+        if not self.workspace.current_workspace:
+            return
+
+        query = self.content_search_input.text()
+        if not query:
+            self._clear_content_search()
+            return
+
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            matches = self._search_files_for_text(query)
+        finally:
+            QApplication.restoreOverrideCursor()
+
+        filter_active = self.chk_content_filter.isChecked()
+        self.file_tree.apply_search(matches, filter_active)
+
+        if matches:
+            self._set_status(f"検索ヒット: {len(matches)}件 「{query}」")
+        else:
+            self._set_status(f"ヒットなし: 「{query}」")
+
+    def _clear_content_search(self):
+        """Clear the content search."""
+        self.content_search_input.clear()
+        self.file_tree.clear_search()
+        self._set_status("検索をクリアしました")
+
+    def _on_content_filter_toggled(self, checked: bool):
+        """Re-apply current search with new filter mode when toggled."""
+        if not self.workspace.current_workspace:
+            return
+        if self.content_search_input.text():
+            self._run_content_search()
+
+    def _search_files_for_text(self, query: str) -> set[str]:
+        """Search all text files in the workspace for the given query.
+
+        Args:
+            query: The string to search for (case-sensitive).
+
+        Returns:
+            Set of relative paths whose contents contain the query.
+        """
+        matches: set[str] = set()
+        workspace = self.workspace.current_workspace
+        if not workspace:
+            return matches
+
+        for path in workspace.rglob('*'):
+            if not path.is_file():
+                continue
+
+            if path.suffix.lower() in self._BINARY_SEARCH_SKIP:
+                continue
+
+            try:
+                if path.stat().st_size > self._CONTENT_SEARCH_MAX_BYTES:
+                    continue
+            except OSError:
+                continue
+
+            try:
+                text = path.read_text(encoding='utf-8')
+            except UnicodeDecodeError:
+                # Not a text file in UTF-8 — skip (treated as binary)
+                continue
+            except OSError:
+                continue
+
+            if query in text:
+                matches.add(str(path.relative_to(workspace)))
+
+        return matches
 
     def show_settings(self):
         """Show the settings dialog."""

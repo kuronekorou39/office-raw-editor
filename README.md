@@ -27,6 +27,7 @@ Office文書 (.docx, .xlsx, .pptx など) はZIPアーカイブであり、内�
 - 自動バックアップ
 - フォントサイズ変更（Ctrl+ホイール）
 - カーソル位置からの検索
+- ファイル内容を含むファイルの検索（ツリーをハイライト/絞り込み）
 
 ## インストール
 
@@ -91,6 +92,7 @@ python -m docx_workdir path\to\file.pptx
 | Ctrl+S | 保存 |
 | Ctrl+Shift+S | 名前を付けて保存 |
 | Ctrl+F | 検索 |
+| Ctrl+Shift+F | ファイル内容検索（ツリー） |
 | F3 / Shift+F3 | 次/前を検索 |
 | Ctrl++ / Ctrl+- | フォント拡大/縮小 |
 | Ctrl+0 | フォントサイズリセット |
