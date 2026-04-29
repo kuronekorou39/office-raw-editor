@@ -1,5 +1,6 @@
 """Constants for office-raw-editor application."""
 
+import re
 from pathlib import Path
 
 # Application info
@@ -110,6 +111,29 @@ FILE_FILTER_ALL = "All Files (*.*)"
 
 
 # Utility functions
+# Main content files in Office Open XML packages.
+# These are the files users most frequently edit (the actual document body).
+_MAIN_CONTENT_PATTERNS = (
+    re.compile(r'^word/document\d*\.xml$'),
+    re.compile(r'^xl/workbook\.xml$'),
+    re.compile(r'^xl/worksheets/sheet\d+\.xml$'),
+    re.compile(r'^ppt/presentation\.xml$'),
+    re.compile(r'^ppt/slides/slide\d+\.xml$'),
+)
+
+# Marker prefix prepended to main content file names in the tree
+MAIN_CONTENT_MARKER = "📌 "
+
+
+def is_main_content_file(rel_path: str) -> bool:
+    """Return True if the relative path is a 'main content' file.
+
+    Accepts both forward-slash and backslash separators.
+    """
+    normalized = rel_path.replace('\\', '/').lower()
+    return any(p.match(normalized) for p in _MAIN_CONTENT_PATTERNS)
+
+
 def format_file_size(size: int) -> str:
     """Format file size for display.
 

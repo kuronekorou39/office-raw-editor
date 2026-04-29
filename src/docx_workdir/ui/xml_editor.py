@@ -730,12 +730,12 @@ class XmlEditorWidget(QWidget):
             self._find_all(search_text, from_cursor=True)
             return
 
-        # Find the next match after current cursor position
-        cursor_pos = self.editor.textCursor().position()
+        # Use selection start as the pivot so that the currently-selected match
+        # (whose anchor is the match start) is skipped on the next press.
+        pivot = self.editor.textCursor().selectionStart()
 
-        # Find next match starting from cursor position
         for i, match_pos in enumerate(self._search_matches):
-            if match_pos > cursor_pos:
+            if match_pos > pivot:
                 self._current_match_index = i
                 self._goto_match(self._current_match_index)
                 return
@@ -755,12 +755,13 @@ class XmlEditorWidget(QWidget):
             self._find_all(search_text, from_cursor=True)
             return
 
-        # Find the previous match before current cursor position
-        cursor_pos = self.editor.textCursor().position()
+        # Use selection start as the pivot. After selecting a match, the cursor's
+        # position is at the end of the selection, so the previous-match search
+        # would otherwise see the current match's start (< end) and stay put.
+        pivot = self.editor.textCursor().selectionStart()
 
-        # Find previous match before cursor position
         for i in range(len(self._search_matches) - 1, -1, -1):
-            if self._search_matches[i] < cursor_pos:
+            if self._search_matches[i] < pivot:
                 self._current_match_index = i
                 self._goto_match(self._current_match_index)
                 return

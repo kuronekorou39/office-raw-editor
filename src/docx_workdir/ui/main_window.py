@@ -1085,15 +1085,17 @@ class MainWindow(QMainWindow):
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
-            matches = self._search_files_for_text(query)
+            match_counts = self._search_files_for_text(query)
         finally:
             QApplication.restoreOverrideCursor()
 
+        matches = set(match_counts.keys())
         filter_active = self.chk_content_filter.isChecked()
-        self.file_tree.apply_search(matches, filter_active)
+        self.file_tree.apply_search(matches, filter_active, match_counts)
 
         if matches:
-            self._set_status(f"検索ヒット: {len(matches)}件 「{query}」")
+            total_hits = sum(match_counts.values())
+            self._set_status(f"検索ヒット: {len(matches)}ファイル / {total_hits}件 「{query}」")
         else:
             self._set_status(f"ヒットなし: 「{query}」")
 
@@ -1110,19 +1112,20 @@ class MainWindow(QMainWindow):
         if self.content_search_input.text():
             self._run_content_search()
 
-    def _search_files_for_text(self, query: str) -> set[str]:
+    def _search_files_for_text(self, query: str) -> dict[str, int]:
         """Search all text files in the workspace for the given query.
 
         Args:
             query: The string to search for (case-sensitive).
 
         Returns:
-            Set of relative paths whose contents contain the query.
+            Dict mapping relative path -> number of occurrences (only files with
+            at least one hit are included).
         """
-        matches: set[str] = set()
+        match_counts: dict[str, int] = {}
         workspace = self.workspace.current_workspace
         if not workspace:
-            return matches
+            return match_counts
 
         for path in workspace.rglob('*'):
             if not path.is_file():
@@ -1145,10 +1148,11 @@ class MainWindow(QMainWindow):
             except OSError:
                 continue
 
-            if query in text:
-                matches.add(str(path.relative_to(workspace)))
+            count = text.count(query)
+            if count > 0:
+                match_counts[str(path.relative_to(workspace))] = count
 
-        return matches
+        return match_counts
 
     def show_settings(self):
         """Show the settings dialog."""

@@ -20,7 +20,9 @@ from ..utils.constants import (
     FILE_TYPE_MAP,
     FOLDER_ICON,
     UNKNOWN_ICON,
+    MAIN_CONTENT_MARKER,
     format_file_size,
+    is_main_content_file,
 )
 
 
@@ -57,7 +59,9 @@ class FileTreeWidget(QTreeWidget):
         self._file_statuses: dict[str, str] = {}
         self._items_map: dict[str, QTreeWidgetItem] = {}
         self._search_matches: set[str] = set()
+        self._search_match_counts: dict[str, int] = {}
         self._search_filter_active: bool = False
+        self._size_heatmap_brushes: dict[str, object] = {}  # rel_path -> QBrush
         self._setup_ui()
         self._connect_signals()
 
@@ -261,10 +265,21 @@ class FileTreeWidget(QTreeWidget):
                 # Create tree item
                 item = QTreeWidgetItem()
                 item.setData(0, Qt.ItemDataRole.UserRole, current_rel)
-                item.setText(0, name)
+
+                is_main = not is_dir and is_main_content_file(current_rel)
+                display_name = f"{MAIN_CONTENT_MARKER}{name}" if is_main else name
+                item.setText(0, display_name)
                 item.setText(1, format_file_size(size) if not is_dir else "")
                 item.setText(2, self._get_file_type(is_dir, suffix))
                 item.setIcon(0, self._get_file_icon(is_dir, suffix))
+
+                # Bold for main content files
+                if is_main:
+                    from PyQt6.QtGui import QFont
+                    font = item.font(0)
+                    font.setBold(True)
+                    item.setFont(0, font)
+                    item.setToolTip(0, "メインコンテンツファイル")
 
                 # Set status in column 3
                 status = self._file_statuses.get(current_rel, '')
@@ -284,9 +299,11 @@ class FileTreeWidget(QTreeWidget):
         # Expand important directories
         self.expandAll()
 
+        # Compute size heatmap (must come before _apply_search_visuals)
+        self._compute_size_heatmap()
+
         # Re-apply search highlight/filter if active
-        if self._search_matches:
-            self._apply_search_visuals()
+        self._apply_search_visuals()
 
     def _apply_status_to_item(self, item: QTreeWidgetItem, status: str, is_dir: bool):
         """Apply status styling to a tree item.
@@ -357,26 +374,65 @@ class FileTreeWidget(QTreeWidget):
 
             self._apply_status_to_item(item, status, is_dir)
 
-    def apply_search(self, matches: set[str], filter_active: bool):
+    def _compute_size_heatmap(self):
+        """Compute and apply background color on the size column based on file size."""
+        from PyQt6.QtGui import QBrush, QColor
+
+        self._size_heatmap_brushes = {}
+        if not self._workspace_path:
+            return
+
+        # Collect file sizes (exclude folders and deleted files)
+        sizes: dict[str, int] = {}
+        for rel_path, item in self._items_map.items():
+            abs_path = self._workspace_path / rel_path
+            if not abs_path.exists() or not abs_path.is_file():
+                continue
+            try:
+                size = abs_path.stat().st_size
+            except OSError:
+                continue
+            if size > 0:
+                sizes[rel_path] = size
+
+        if not sizes:
+            return
+
+        max_size = max(sizes.values())
+        # Color gradient: very light blue (small) → medium blue (large)
+        # Light: (239, 246, 255) ≈ tailwind blue-50
+        # Strong: (96, 165, 250) ≈ tailwind blue-400
+        for rel_path, size in sizes.items():
+            ratio = size / max_size
+            r = int(239 + (96 - 239) * ratio)
+            g = int(246 + (165 - 246) * ratio)
+            b = int(255 + (250 - 255) * ratio)
+            self._size_heatmap_brushes[rel_path] = QBrush(QColor(r, g, b))
+
+    def apply_search(self, matches: set[str], filter_active: bool, match_counts: Optional[dict[str, int]] = None):
         """Apply search results: highlight matched files and optionally hide non-matches.
 
         Args:
             matches: Set of relative paths (str) that contain the search string.
             filter_active: If True, hide items that do not match (and folders with
                 no matching descendants). If False, only highlight.
+            match_counts: Optional dict of relative path -> hit count, to display
+                next to the file size.
         """
         self._search_matches = set(matches)
+        self._search_match_counts = dict(match_counts) if match_counts else {}
         self._search_filter_active = filter_active
         self._apply_search_visuals()
 
     def clear_search(self):
         """Clear search highlighting and unhide all items."""
         self._search_matches = set()
+        self._search_match_counts = {}
         self._search_filter_active = False
         self._apply_search_visuals()
 
     def _apply_search_visuals(self):
-        """Apply highlight color and visibility based on current search state."""
+        """Apply highlight color, hit-count text, and visibility based on search state."""
         from PyQt6.QtGui import QBrush, QColor
 
         highlight = QBrush(QColor(self.SEARCH_HIGHLIGHT_COLOR))
@@ -384,17 +440,34 @@ class FileTreeWidget(QTreeWidget):
 
         has_search = bool(self._search_matches)
 
-        # First pass: set highlight on files
+        # First pass: set highlight, hit-count text, and restore size heatmap
         for rel_path, item in self._items_map.items():
             abs_path = self._workspace_path / rel_path if self._workspace_path else None
             is_dir = abs_path.is_dir() if abs_path and abs_path.exists() else False
 
-            if not is_dir and has_search and rel_path in self._search_matches:
+            is_match = not is_dir and has_search and rel_path in self._search_matches
+
+            if is_match:
                 for col in range(self.columnCount()):
                     item.setBackground(col, highlight)
             else:
                 for col in range(self.columnCount()):
-                    item.setBackground(col, no_brush)
+                    if col == 1 and rel_path in self._size_heatmap_brushes:
+                        item.setBackground(col, self._size_heatmap_brushes[rel_path])
+                    else:
+                        item.setBackground(col, no_brush)
+
+            # Update size column text to include hit count
+            if not is_dir:
+                size_text = item.text(1)
+                # Strip any previous hit suffix
+                if "  🔍" in size_text:
+                    size_text = size_text.split("  🔍", 1)[0]
+                count = self._search_match_counts.get(rel_path, 0)
+                if count > 0:
+                    item.setText(1, f"{size_text}  🔍{count}")
+                else:
+                    item.setText(1, size_text)
 
         # Second pass: handle visibility for filter mode
         if self._search_filter_active and has_search:
@@ -417,7 +490,9 @@ class FileTreeWidget(QTreeWidget):
         self.clear()
         self._workspace_path = None
         self._search_matches = set()
+        self._search_match_counts = {}
         self._search_filter_active = False
+        self._size_heatmap_brushes = {}
 
     def _on_item_double_clicked(self, item: QTreeWidgetItem, column: int):
         """Handle double-click on a tree item.
