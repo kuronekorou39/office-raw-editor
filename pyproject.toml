@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
-authors = [{ name = "kuronekorou39" }]
+authors = [{ name = "rou39" }]
 keywords = ["docx", "xlsx", "pptx", "office-open-xml", "ooxml", "xml", "editor"]
 classifiers = [
     "Development Status :: 4 - Beta",
