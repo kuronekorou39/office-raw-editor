@@ -15,6 +15,7 @@ dependencies = [
 dev = [
     "pytest>=7.4.0",
     "pytest-qt>=4.2.0",
+    "pyinstaller>=6.0",
 ]
 
 [project.scripts]
@@ -22,6 +23,9 @@ office-raw-editor = "office_raw_editor.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+office_raw_editor = ["ui/assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

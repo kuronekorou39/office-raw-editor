@@ -27,6 +27,7 @@ wheels/
 # PyInstaller
 *.manifest
 *.spec
+!office-raw-editor.spec
 
 # Installer logs
 pip-log.txt

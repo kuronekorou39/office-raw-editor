@@ -115,6 +115,17 @@ python -m office_raw_editor path\to\file.pptx
 - 大きなXMLファイルは内蔵エディタの「色付け」をOFFにすると軽くなります
 - Officeファイルの構造を壊すとアプリケーションで開けなくなる可能性があります
 
+## exe にして配る
+
+Python の無い PC には、exe にして zip で配れる。
+
+```powershell
+venv\Scripts\pip install -r requirements-dev.txt
+.\scripts\build_exe.ps1
+```
+
+`dist\office-raw-editor-<版>.zip` ができる。詳細と配布時の注意は [docs/build-exe.md](docs/build-exe.md)。
+
 ## テスト
 
 ```bash
