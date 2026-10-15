@@ -7,10 +7,10 @@ DPI and can be tinted to any color without extra image files or fonts.
 
 from typing import Optional
 
-from PyQt6.QtCore import QRect, QSize, Qt, QByteArray
-from PyQt6.QtGui import QColor, QIcon, QIconEngine, QPainter, QPixmap, QGuiApplication
-from PyQt6.QtSvg import QSvgRenderer
-from PyQt6.QtWidgets import QLabel, QPushButton
+from PySide6.QtCore import QRect, QSize, Qt, QByteArray
+from PySide6.QtGui import QColor, QIcon, QIconEngine, QPainter, QPixmap, QGuiApplication
+from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtWidgets import QLabel, QPushButton
 
 from .styles import COLORS, ICON_BUTTON_STYLE
 

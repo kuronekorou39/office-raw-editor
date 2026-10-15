@@ -3,9 +3,9 @@
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QCloseEvent, QKeySequence, QShortcut
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QCloseEvent, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
     QMainWindow,
     QTabWidget,
     QMessageBox,
@@ -21,8 +21,8 @@ from ..utils.constants import APP_NAME
 class EditorWindow(QMainWindow):
     """Separate window for editing files with tabs."""
 
-    file_saved = pyqtSignal(str)  # Emits path when a file is saved
-    window_closed = pyqtSignal()
+    file_saved = Signal(str)  # Emits path when a file is saved
+    window_closed = Signal()
 
     _instance: Optional['EditorWindow'] = None
 

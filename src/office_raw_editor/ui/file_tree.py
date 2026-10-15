@@ -3,9 +3,9 @@
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon, QAction, QFont
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QIcon, QAction, QFont
+from PySide6.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
     QHeaderView,
@@ -27,14 +27,14 @@ from ..utils.constants import (
 class FileTreeWidget(QTreeWidget):
     """Tree widget displaying the file structure of an extracted docx."""
 
-    file_double_clicked = pyqtSignal(str)  # Emits the relative file path
+    file_double_clicked = Signal(str)  # Emits the relative file path
 
     # File operation signals
-    file_replace_requested = pyqtSignal(str)  # Emits the relative file path to replace
-    file_delete_requested = pyqtSignal(str)  # Emits the relative file path to delete
-    file_add_requested = pyqtSignal(str)  # Emits the relative folder path to add to
-    folder_add_requested = pyqtSignal(str)  # Emits the relative folder path to add folder to
-    file_revert_requested = pyqtSignal(str)  # Emits the relative file path to revert
+    file_replace_requested = Signal(str)  # Emits the relative file path to replace
+    file_delete_requested = Signal(str)  # Emits the relative file path to delete
+    file_add_requested = Signal(str)  # Emits the relative folder path to add to
+    folder_add_requested = Signal(str)  # Emits the relative folder path to add folder to
+    file_revert_requested = Signal(str)  # Emits the relative file path to revert
 
     # Status colors
     STATUS_COLORS = {
@@ -316,7 +316,7 @@ class FileTreeWidget(QTreeWidget):
             status: Status string ('M', 'A', 'D', or '').
             is_dir: Whether the item is a directory.
         """
-        from PyQt6.QtGui import QBrush, QColor, QFont
+        from PySide6.QtGui import QBrush, QColor, QFont
 
         if not status or is_dir:
             item.setText(3, "")
@@ -379,7 +379,7 @@ class FileTreeWidget(QTreeWidget):
 
     def _compute_size_heatmap(self):
         """Compute and apply background color on the size column based on file size."""
-        from PyQt6.QtGui import QBrush, QColor
+        from PySide6.QtGui import QBrush, QColor
 
         self._size_heatmap_brushes = {}
         if not self._workspace_path:
@@ -436,7 +436,7 @@ class FileTreeWidget(QTreeWidget):
 
     def _apply_search_visuals(self):
         """Apply highlight color, hit-count text, and visibility based on search state."""
-        from PyQt6.QtGui import QBrush, QColor
+        from PySide6.QtGui import QBrush, QColor
 
         highlight = QBrush(QColor(self.SEARCH_HIGHLIGHT_COLOR))
         no_brush = QBrush()
@@ -489,6 +489,8 @@ class FileTreeWidget(QTreeWidget):
         """Clear the tree and reset workspace path."""
         self.clear()
         self._workspace_path = None
+        self._file_statuses = {}
+        self._items_map.clear()
         self._search_matches = set()
         self._search_match_counts = {}
         self._search_filter_active = False

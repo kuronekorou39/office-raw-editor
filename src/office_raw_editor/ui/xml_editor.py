@@ -5,8 +5,8 @@ import xml.dom.minidom
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize
-from PyQt6.QtGui import (
+from PySide6.QtCore import Qt, Signal, QRect, QSize
+from PySide6.QtGui import (
     QColor,
     QFont,
     QSyntaxHighlighter,
@@ -18,7 +18,7 @@ from PyQt6.QtGui import (
     QTextFormat,
     QTextCursor,
 )
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -115,7 +115,7 @@ class CodeEditor(QPlainTextEdit):
     DEFAULT_FONT_SIZE = 10
 
     # Signal emitted when zoom level changes
-    zoom_changed = pyqtSignal(int)  # Emits new font size
+    zoom_changed = Signal(int)  # Emits new font size
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -284,8 +284,8 @@ class CodeEditor(QPlainTextEdit):
 class XmlEditorWidget(QWidget):
     """XML editor widget with syntax highlighting and save functionality."""
 
-    content_modified = pyqtSignal()
-    file_saved = pyqtSignal(str)
+    content_modified = Signal()
+    file_saved = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -617,7 +617,8 @@ class XmlEditorWidget(QWidget):
 
     def toggle_search_bar(self):
         """Toggle search bar visibility."""
-        if self.search_bar.isVisible():
+        # isHidden() reflects the bar's own state even before the editor is shown
+        if not self.search_bar.isHidden():
             self.hide_search_bar()
         else:
             self.show_search_bar()
@@ -840,7 +841,7 @@ class XmlEditorWidget(QWidget):
 
     def _show_format_suggestion(self):
         """Show a suggestion to format the XML for better performance."""
-        from PyQt6.QtCore import QTimer
+        from PySide6.QtCore import QTimer
 
         def show_dialog():
             result = QMessageBox.question(

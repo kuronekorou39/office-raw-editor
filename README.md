@@ -115,10 +115,20 @@ python -m office_raw_editor path\to\file.pptx
 - 大きなXMLファイルは内蔵エディタの「色付け」をOFFにすると軽くなります
 - Officeファイルの構造を壊すとアプリケーションで開けなくなる可能性があります
 
+## テスト
+
+```bash
+pip install -e .[dev]
+pytest
+```
+
+pytest-qt を使い、オフスクリーン描画で GUI もテストします(ディスプレイ不要)。
+テスト中の設定は一時ファイルに隔離され、実際のレジストリ設定には影響しません。
+
 ## 動作環境
 
 - Python 3.10以上
-- PyQt6 6.5.0以上
+- PySide6 6.6.0以上
 
 ## ライセンス
 

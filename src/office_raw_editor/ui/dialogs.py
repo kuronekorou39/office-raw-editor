@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QMessageBox,
     QVBoxLayout,
@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QFileDialog,
 )
-from PyQt6.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from ..utils.constants import (
     DIALOG_TITLE_CONFIRM,

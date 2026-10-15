@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer, QSize
-from PyQt6.QtGui import QAction, QKeySequence, QCloseEvent, QShortcut
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer, QSize
+from PySide6.QtGui import QAction, QKeySequence, QCloseEvent, QShortcut
+from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
     QVBoxLayout,
@@ -146,6 +146,7 @@ class MainWindow(QMainWindow):
         self.workspace = WorkspaceManager()
         self.settings = get_settings()
         self._modification_timer: Optional[QTimer] = None
+        self._connected_editor_window: Optional[EditorWindow] = None
 
         self._setup_ui()
         self._create_menus()
@@ -316,8 +317,8 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.info_label)
 
         # Image preview area (hidden by default)
-        from PyQt6.QtWidgets import QScrollArea
-        from PyQt6.QtGui import QPixmap
+        from PySide6.QtWidgets import QScrollArea
+        from PySide6.QtGui import QPixmap
         self.image_scroll = QScrollArea()
         self.image_scroll.setWidgetResizable(True)
         self.image_scroll.setStyleSheet("QScrollArea { border: 1px solid #E2E8F0; border-radius: 8px; }")
@@ -329,7 +330,7 @@ class MainWindow(QMainWindow):
         self.image_scroll.hide()
         right_layout.addWidget(self.image_scroll)
 
-        from PyQt6.QtWidgets import QTextEdit
+        from PySide6.QtWidgets import QTextEdit
         self.info_text = QTextEdit()
         self.info_text.setReadOnly(True)
         self.info_text.setPlaceholderText("ファイルを選択すると情報が表示されます")
@@ -773,7 +774,7 @@ class MainWindow(QMainWindow):
             return
 
         # Show dialog to choose editor
-        from PyQt6.QtWidgets import QMessageBox
+        from PySide6.QtWidgets import QMessageBox
         msg = QMessageBox(self)
         msg.setWindowTitle("ファイルを開く")
         msg.setText(f"{abs_path.name} をどのエディタで開きますか？")
@@ -794,12 +795,11 @@ class MainWindow(QMainWindow):
     def _open_in_internal_editor(self, file_path: Path):
         """Open a file in the internal editor window."""
         editor_window = EditorWindow.get_instance()
-        # Connect signal only if not already connected (avoid duplicates)
-        try:
-            editor_window.file_saved.disconnect(self._on_editor_file_saved)
-        except TypeError:
-            pass  # Not connected yet
-        editor_window.file_saved.connect(self._on_editor_file_saved)
+        # get_instance() creates a fresh window after the previous one was closed,
+        # so connect once per instance instead of disconnect/reconnect every time
+        if editor_window is not self._connected_editor_window:
+            editor_window.file_saved.connect(self._on_editor_file_saved)
+            self._connected_editor_window = editor_window
         if editor_window.open_file(file_path):
             self._set_status(f"エディタで開きました: {file_path.name}")
 
@@ -853,7 +853,7 @@ class MainWindow(QMainWindow):
 
     def _show_image_preview(self, image_path: Path):
         """Show image preview in the info panel."""
-        from PyQt6.QtGui import QPixmap
+        from PySide6.QtGui import QPixmap
 
         pixmap = QPixmap(str(image_path))
         if pixmap.isNull():
@@ -886,7 +886,7 @@ class MainWindow(QMainWindow):
         suffix = abs_path.suffix
         filter_str = f"Same type (*{suffix});;All files (*.*)" if suffix else "All files (*.*)"
 
-        from PyQt6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog
         new_file, _ = QFileDialog.getOpenFileName(
             self,
             f"差し替えるファイルを選択 - {abs_path.name}",
@@ -969,7 +969,7 @@ class MainWindow(QMainWindow):
         if not abs_folder or not abs_folder.is_dir():
             return
 
-        from PyQt6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog
         new_files, _ = QFileDialog.getOpenFileNames(
             self,
             f"追加するファイルを選択 - {rel_folder_path}",
@@ -1002,7 +1002,7 @@ class MainWindow(QMainWindow):
         if not abs_folder or not abs_folder.is_dir():
             return
 
-        from PyQt6.QtWidgets import QInputDialog
+        from PySide6.QtWidgets import QInputDialog
         folder_name, ok = QInputDialog.getText(
             self,
             "新しいフォルダ",
@@ -1036,7 +1036,7 @@ class MainWindow(QMainWindow):
         editor_window = EditorWindow._instance
         if editor_window and editor_window.has_unsaved_changes():
             unsaved = editor_window.get_unsaved_files()
-            from PyQt6.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             result = QMessageBox.question(
                 self,
                 "未保存の変更",
