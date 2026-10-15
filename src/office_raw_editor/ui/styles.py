@@ -480,3 +480,23 @@ SYNTAX_COLORS = {
     'comment': '#94A3B8',        # Gray
     'text': '#1E293B',           # Dark
 }
+
+# Square icon-only button (overrides the global padding so the icon is never clipped)
+ICON_BUTTON_STYLE = """
+QPushButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0;
+    min-height: 0;
+}
+
+QPushButton:hover {
+    background-color: #F1F5F9;
+    border-color: #E2E8F0;
+}
+
+QPushButton:pressed {
+    background-color: #E2E8F0;
+}
+"""

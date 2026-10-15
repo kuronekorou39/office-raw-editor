@@ -1,1 +1,1 @@
-"""Tests for docx-workdir."""
+"""Tests for office-raw-editor."""

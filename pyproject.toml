@@ -18,7 +18,7 @@ dev = [
 ]
 
 [project.scripts]
-office-raw-editor = "docx_workdir.app:main"
+office-raw-editor = "office_raw_editor.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

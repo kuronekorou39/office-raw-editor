@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ..utils.settings import get_settings
+from .icons import icon
 from .styles import APP_STYLESHEET
 
 
@@ -78,10 +79,10 @@ class SettingsDialog(QDialog):
             # Check if this editor exists
             expanded = os.path.expandvars(path)
             exists = os.path.isfile(expanded)
-            status = "✓" if exists else "✗"
             status_color = "#059669" if exists else "#DC2626"
 
-            btn = QPushButton(f"{status} {name}")
+            btn = QPushButton(name)
+            btn.setIcon(icon("check" if exists else "x", status_color, "#CBD5E1"))
             btn.setToolTip(f"{path}\n展開後: {expanded}")
             btn.setStyleSheet(f"""
                 QPushButton {{

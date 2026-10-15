@@ -47,7 +47,8 @@ from .file_tree import FileTreeWidget
 from .editor_window import EditorWindow
 from .dialogs import ConfirmDialog, ErrorDialog, FileDialogs
 from .settings_dialog import SettingsDialog
-from .styles import TOOLBAR_BUTTON_STYLE, PRIMARY_BUTTON_STYLE
+from .styles import TOOLBAR_BUTTON_STYLE, PRIMARY_BUTTON_STYLE, COLORS
+from .icons import icon, icon_label, icon_button
 
 
 class WelcomeWidget(QWidget):
@@ -64,10 +65,8 @@ class WelcomeWidget(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # Icon/Logo
-        icon_label = QLabel("📄")
-        icon_label.setStyleSheet("font-size: 64px;")
-        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(icon_label)
+        logo = icon_label("file-text", 72, COLORS['primary'])
+        layout.addWidget(logo, alignment=Qt.AlignmentFlag.AlignCenter)
 
         layout.addSpacing(16)
 
@@ -86,7 +85,8 @@ class WelcomeWidget(QWidget):
         layout.addSpacing(32)
 
         # Open button
-        self.btn_open = QPushButton("  ファイルを開く")
+        self.btn_open = QPushButton("ファイルを開く")
+        self.btn_open.setIcon(icon("folder-open", "#FFFFFF"))
         self.btn_open.setStyleSheet(PRIMARY_BUTTON_STYLE)
         self.btn_open.setFixedSize(200, 48)
         self.btn_open.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -104,25 +104,33 @@ class WelcomeWidget(QWidget):
 
         # Tips
         tips_frame = QFrame()
+        tips_frame.setObjectName("tipsFrame")
+        # Scope to the frame itself: QLabel is a QFrame subclass and would inherit the padding
         tips_frame.setStyleSheet("""
-            QFrame {
+            QFrame#tipsFrame {
                 background-color: #F1F5F9;
                 border-radius: 8px;
-                padding: 16px;
             }
         """)
         tips_layout = QVBoxLayout(tips_frame)
+        tips_layout.setContentsMargins(24, 20, 24, 20)
+        tips_layout.setSpacing(10)
 
-        tips_title = QLabel("💡 使い方")
+        tips_title_row = QHBoxLayout()
+        tips_title_row.setSpacing(6)
+        tips_title_row.addWidget(icon_label("lightbulb", 16, "#475569"))
+        tips_title = QLabel("使い方")
         tips_title.setStyleSheet("font-weight: bold; color: #475569;")
-        tips_layout.addWidget(tips_title)
+        tips_title_row.addWidget(tips_title)
+        tips_title_row.addStretch()
+        tips_layout.addLayout(tips_title_row)
 
         tips_text = QLabel(
             "1. Officeファイルを開くと内部構造がツリー表示されます\n"
             "2. ファイルをダブルクリックで内蔵エディタで編集\n"
             "3. 編集後「保存」で元の形式として出力\n\n"
-            "🔒 元ファイルは変更されません（コピーで作業）\n"
-            "📁 対応形式: Word / Excel / PowerPoint"
+            "・元ファイルは変更されません（コピーで作業）\n"
+            "・対応形式: Word / Excel / PowerPoint"
         )
         tips_text.setStyleSheet("color: #64748B; line-height: 1.6;")
         tips_layout.addWidget(tips_text)
@@ -192,7 +200,7 @@ class MainWindow(QMainWindow):
         info_banner_layout.setContentsMargins(12, 6, 12, 6)
         info_banner_layout.setSpacing(8)
 
-        self.info_banner_icon = QLabel("🔒")
+        self.info_banner_icon = icon_label("lock", 14, "#1E40AF")
         info_banner_layout.addWidget(self.info_banner_icon)
 
         self.info_banner_text = QLabel("コピーで作業中")
@@ -205,7 +213,9 @@ class MainWindow(QMainWindow):
         info_banner_layout.addWidget(self.info_banner_path, 1)
 
         # Button to open workspace in Explorer
-        self.btn_open_workspace = QPushButton("📂 開く")
+        self.btn_open_workspace = QPushButton("開く")
+        self.btn_open_workspace.setIcon(icon("folder-open", "#FFFFFF"))
+        self.btn_open_workspace.setIconSize(QSize(14, 14))
         self.btn_open_workspace.setToolTip("作業フォルダをエクスプローラーで開く")
         self.btn_open_workspace.setStyleSheet("""
             QPushButton {
@@ -238,13 +248,15 @@ class MainWindow(QMainWindow):
         left_layout.setSpacing(4)
 
         # Tree header
-        self.tree_header = QLabel("📁 ファイル構造")
-        self.tree_header.setStyleSheet("""
-            font-weight: 600;
-            color: #475569;
-            padding: 8px 4px;
-        """)
-        left_layout.addWidget(self.tree_header)
+        tree_header_row = QHBoxLayout()
+        tree_header_row.setContentsMargins(4, 8, 4, 8)
+        tree_header_row.setSpacing(6)
+        tree_header_row.addWidget(icon_label("folder", 16, "#475569"))
+        self.tree_header = QLabel("ファイル構造")
+        self.tree_header.setStyleSheet("font-weight: 600; color: #475569;")
+        tree_header_row.addWidget(self.tree_header)
+        tree_header_row.addStretch()
+        left_layout.addLayout(tree_header_row)
 
         # Content search bar (search inside files)
         search_bar = QHBoxLayout()
@@ -257,9 +269,7 @@ class MainWindow(QMainWindow):
         self.content_search_input.returnPressed.connect(self._run_content_search)
         search_bar.addWidget(self.content_search_input, 1)
 
-        self.btn_content_search = QPushButton("🔍")
-        self.btn_content_search.setToolTip("検索を実行")
-        self.btn_content_search.setFixedWidth(30)
+        self.btn_content_search = icon_button("search", "検索を実行")
         self.btn_content_search.clicked.connect(self._run_content_search)
         search_bar.addWidget(self.btn_content_search)
 
@@ -268,9 +278,7 @@ class MainWindow(QMainWindow):
         self.chk_content_filter.toggled.connect(self._on_content_filter_toggled)
         search_bar.addWidget(self.chk_content_filter)
 
-        self.btn_content_search_clear = QPushButton("✖")
-        self.btn_content_search_clear.setToolTip("検索結果をクリア")
-        self.btn_content_search_clear.setFixedWidth(30)
+        self.btn_content_search_clear = icon_button("x", "検索結果をクリア")
         self.btn_content_search_clear.clicked.connect(self._clear_content_search)
         search_bar.addWidget(self.btn_content_search_clear)
 
@@ -292,13 +300,15 @@ class MainWindow(QMainWindow):
         right_layout.setSpacing(8)
 
         # Header
-        info_header = QLabel("ℹ️ ファイル情報")
-        info_header.setStyleSheet("""
-            font-weight: 600;
-            color: #475569;
-            padding: 4px;
-        """)
-        right_layout.addWidget(info_header)
+        info_header_row = QHBoxLayout()
+        info_header_row.setContentsMargins(4, 4, 4, 4)
+        info_header_row.setSpacing(6)
+        info_header_row.addWidget(icon_label("info", 16, "#475569"))
+        info_header = QLabel("ファイル情報")
+        info_header.setStyleSheet("font-weight: 600; color: #475569;")
+        info_header_row.addWidget(info_header)
+        info_header_row.addStretch()
+        right_layout.addLayout(info_header_row)
 
         self.info_label = QLabel("ファイルを選択してください")
         self.info_label.setStyleSheet("font-weight: 600; font-size: 14px; color: #1E293B;")
@@ -342,26 +352,26 @@ class MainWindow(QMainWindow):
         # File menu
         file_menu = menubar.addMenu("ファイル(&F)")
 
-        self.action_open = QAction("📂 開く(&O)...", self)
+        self.action_open = QAction(icon("folder-open"), "開く(&O)...", self)
         self.action_open.setShortcut(QKeySequence.StandardKey.Open)
         self.action_open.triggered.connect(self.open_docx)
         file_menu.addAction(self.action_open)
 
         file_menu.addSeparator()
 
-        self.action_save = QAction("💾 上書き保存(&S)", self)
+        self.action_save = QAction(icon("save"), "上書き保存(&S)", self)
         self.action_save.setShortcut(QKeySequence.StandardKey.Save)
         self.action_save.triggered.connect(self.save_docx)
         file_menu.addAction(self.action_save)
 
-        self.action_save_as = QAction("📝 名前を付けて保存(&A)...", self)
+        self.action_save_as = QAction(icon("save-as"), "名前を付けて保存(&A)...", self)
         self.action_save_as.setShortcut(QKeySequence("Ctrl+Shift+S"))
         self.action_save_as.triggered.connect(self.save_docx_as)
         file_menu.addAction(self.action_save_as)
 
         file_menu.addSeparator()
 
-        self.action_close = QAction("✖ 閉じる(&C)", self)
+        self.action_close = QAction(icon("x"), "閉じる(&C)", self)
         self.action_close.setShortcut(QKeySequence.StandardKey.Close)
         self.action_close.triggered.connect(self.close_workspace)
         file_menu.addAction(self.action_close)
@@ -376,34 +386,36 @@ class MainWindow(QMainWindow):
         # Edit menu
         edit_menu = menubar.addMenu("編集(&E)")
 
-        self.action_refresh = QAction("🔄 更新(&R)", self)
+        self.action_refresh = QAction(icon("refresh"), "更新(&R)", self)
         self.action_refresh.setShortcut(QKeySequence.StandardKey.Refresh)
         self.action_refresh.triggered.connect(self.refresh_tree)
         edit_menu.addAction(self.action_refresh)
 
         edit_menu.addSeparator()
 
-        self.action_open_folder = QAction("📁 作業フォルダを開く(&F)", self)
+        self.action_open_folder = QAction(icon("folder"), "作業フォルダを開く(&F)", self)
         self.action_open_folder.triggered.connect(self.open_workspace_folder)
         edit_menu.addAction(self.action_open_folder)
 
         # Tools menu
         tools_menu = menubar.addMenu("ツール(&T)")
 
-        self.action_settings = QAction("⚙️ 設定(&S)...", self)
+        self.action_settings = QAction(icon("settings"), "設定(&S)...", self)
         self.action_settings.triggered.connect(self.show_settings)
         tools_menu.addAction(self.action_settings)
 
         # Help menu
         help_menu = menubar.addMenu("ヘルプ(&H)")
 
-        self.action_about = QAction("ℹ️ バージョン情報(&A)", self)
+        self.action_about = QAction(icon("info"), "バージョン情報(&A)", self)
         self.action_about.triggered.connect(self.show_about)
         help_menu.addAction(self.action_about)
 
-    def _create_toolbar_button(self, text: str, tooltip: str = "") -> QPushButton:
+    def _create_toolbar_button(self, icon_name: str, text: str, tooltip: str = "") -> QPushButton:
         """Create a styled toolbar button."""
         btn = QPushButton(text)
+        btn.setIcon(icon(icon_name))
+        btn.setIconSize(QSize(16, 16))
         btn.setStyleSheet(TOOLBAR_BUTTON_STYLE)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
         if tooltip:
@@ -418,26 +430,26 @@ class MainWindow(QMainWindow):
         self.addToolBar(toolbar)
 
         # Open button
-        self.btn_open = self._create_toolbar_button("📂 開く", "ファイルを開く (Ctrl+O)")
+        self.btn_open = self._create_toolbar_button("folder-open", "開く", "ファイルを開く (Ctrl+O)")
         self.btn_open.clicked.connect(self.open_docx)
         toolbar.addWidget(self.btn_open)
 
         toolbar.addSeparator()
 
         # Save button
-        self.btn_save = self._create_toolbar_button("💾 保存", "上書き保存 (Ctrl+S)")
+        self.btn_save = self._create_toolbar_button("save", "保存", "上書き保存 (Ctrl+S)")
         self.btn_save.clicked.connect(self.save_docx)
         toolbar.addWidget(self.btn_save)
 
         # Save As button
-        self.btn_save_as = self._create_toolbar_button("📝 別名保存", "名前を付けて保存 (Ctrl+Shift+S)")
+        self.btn_save_as = self._create_toolbar_button("save-as", "別名保存", "名前を付けて保存 (Ctrl+Shift+S)")
         self.btn_save_as.clicked.connect(self.save_docx_as)
         toolbar.addWidget(self.btn_save_as)
 
         toolbar.addSeparator()
 
         # Refresh button
-        self.btn_refresh = self._create_toolbar_button("🔄 更新", "ツリーを更新 (F5)")
+        self.btn_refresh = self._create_toolbar_button("refresh", "更新", "ツリーを更新 (F5)")
         self.btn_refresh.clicked.connect(self.refresh_tree)
         toolbar.addWidget(self.btn_refresh)
 
@@ -447,7 +459,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(spacer)
 
         # Settings button (right aligned)
-        self.btn_settings = self._create_toolbar_button("⚙️ 設定", "設定を開く")
+        self.btn_settings = self._create_toolbar_button("settings", "設定", "設定を開く")
         self.btn_settings.clicked.connect(self.show_settings)
         toolbar.addWidget(self.btn_settings)
 
@@ -456,7 +468,7 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
-        self.status_label = QLabel("  📋 準備完了")
+        self.status_label = QLabel("準備完了")
         self.status_label.setStyleSheet("color: #64748B;")
         self.status_bar.addWidget(self.status_label)
 
@@ -516,9 +528,9 @@ class MainWindow(QMainWindow):
                 parts.append(f"A:{counts['A']}")
             if counts['D'] > 0:
                 parts.append(f"D:{counts['D']}")
-            self.tree_header.setText(f"📁 ファイル構造  ({', '.join(parts)})")
+            self.tree_header.setText(f"ファイル構造  ({', '.join(parts)})")
         else:
-            self.tree_header.setText("📁 ファイル構造")
+            self.tree_header.setText("ファイル構造")
 
     def _update_window_title(self):
         """Update the window title."""
@@ -536,7 +548,7 @@ class MainWindow(QMainWindow):
         ws_str = str(workspace_path)
         if len(ws_str) > 60:
             ws_str = "..." + ws_str[-57:]
-        self.info_banner_path.setText(f"📂 {ws_str}")
+        self.info_banner_path.setText(ws_str)
         self.info_banner_path.setToolTip(f"元ファイル: {source_path}\n作業フォルダ: {workspace_path}")
 
     def _update_ui_state(self):
@@ -575,7 +587,7 @@ class MainWindow(QMainWindow):
 
     def _set_status(self, message: str):
         """Update status bar message."""
-        self.status_label.setText(f"  📋 {message}")
+        self.status_label.setText(message)
 
     # ===== Drag and Drop =====
 
@@ -807,16 +819,16 @@ class MainWindow(QMainWindow):
         if abs_path.is_file():
             try:
                 size = abs_path.stat().st_size
-                info = f"📄 ファイル: {abs_path.name}\n"
-                info += f"📦 サイズ: {format_file_size(size)}\n"
-                info += f"📍 パス: {abs_path.relative_to(self.workspace.current_workspace)}\n"
+                info = f"ファイル: {abs_path.name}\n"
+                info += f"サイズ: {format_file_size(size)}\n"
+                info += f"パス: {abs_path.relative_to(self.workspace.current_workspace)}\n"
 
                 suffix_lower = abs_path.suffix.lower()
 
                 # Check if it's an image file
                 if suffix_lower in IMAGE_EXTENSIONS:
                     self._show_image_preview(abs_path)
-                    info += f"\n🖼️ 画像プレビューを上に表示中"
+                    info += "\n画像プレビューを上に表示中"
                 else:
                     self.image_scroll.hide()
 
@@ -825,7 +837,7 @@ class MainWindow(QMainWindow):
                         content = abs_path.read_text(encoding="utf-8")
                         if len(content) > 5000:
                             content = content[:5000] + "\n\n... (省略)"
-                        info += f"\n{'─' * 40}\n📝 内容プレビュー:\n{'─' * 40}\n{content}"
+                        info += f"\n{'─' * 40}\n内容プレビュー:\n{'─' * 40}\n{content}"
                     except Exception:
                         pass
 
@@ -834,7 +846,7 @@ class MainWindow(QMainWindow):
                 self.info_text.setText("ファイル情報を取得できませんでした")
                 self.image_scroll.hide()
         else:
-            self.info_text.setText(f"📁 フォルダ: {abs_path.name}")
+            self.info_text.setText(f"フォルダ: {abs_path.name}")
             self.image_scroll.hide()
 
         self._update_ui_state()
@@ -1165,15 +1177,15 @@ class MainWindow(QMainWindow):
         ErrorDialog.show_info(
             self,
             "バージョン情報",
-            f"📄 {APP_NAME}\n"
+            f"{APP_NAME}\n"
             f"バージョン: {APP_VERSION}\n\n"
             f"Office Open XML ファイルの内部構造を編集するGUIツール\n\n"
-            f"📁 対応形式:\n"
+            f"対応形式:\n"
             f"  Word: .docx .docm .dotx .dotm\n"
             f"  Excel: .xlsx .xlsm .xltx .xltm\n"
             f"  PowerPoint: .pptx .pptm .potx .potm .ppsx .ppsm\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📌 ショートカットキー:\n"
+            f"ショートカットキー:\n"
             f"  Ctrl+O  ファイルを開く\n"
             f"  Ctrl+S  保存\n"
             f"  Ctrl+F  検索",

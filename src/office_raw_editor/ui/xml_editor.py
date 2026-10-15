@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import (
     QTextEdit,
 )
 
+from .icons import icon, icon_label, icon_button
 from .styles import SYNTAX_COLORS, LINE_NUMBER_STYLE, COLORS, APP_STYLESHEET
 
 
@@ -368,7 +369,8 @@ class XmlEditorWidget(QWidget):
         header.addStretch()
 
         # Syntax highlight toggle (as button)
-        self.btn_highlight = QPushButton("🎨 色付け")
+        self.btn_highlight = QPushButton("色付け")
+        self.btn_highlight.setIcon(icon("highlighter"))
         self.btn_highlight.setCheckable(True)
         self.btn_highlight.setChecked(True)
         self.btn_highlight.setStyleSheet(toggle_btn_style)
@@ -377,7 +379,8 @@ class XmlEditorWidget(QWidget):
         header.addWidget(self.btn_highlight)
 
         # Word wrap toggle (as button)
-        self.btn_wrap = QPushButton("↩️ 折返し")
+        self.btn_wrap = QPushButton("折返し")
+        self.btn_wrap.setIcon(icon("wrap-text"))
         self.btn_wrap.setCheckable(True)
         self.btn_wrap.setChecked(False)
         self.btn_wrap.setStyleSheet(toggle_btn_style)
@@ -391,14 +394,16 @@ class XmlEditorWidget(QWidget):
         header.addWidget(sep)
 
         # Format XML button
-        self.btn_format = QPushButton("📐 整形")
+        self.btn_format = QPushButton("整形")
+        self.btn_format.setIcon(icon("code"))
         self.btn_format.setToolTip("XMLを整形して見やすくする")
         self.btn_format.setStyleSheet(toolbar_btn_style)
         self.btn_format.clicked.connect(self.format_xml)
         header.addWidget(self.btn_format)
 
         # Search button
-        self.btn_search = QPushButton("🔍 検索")
+        self.btn_search = QPushButton("検索")
+        self.btn_search.setIcon(icon("search"))
         self.btn_search.setToolTip("Ctrl+F")
         self.btn_search.setStyleSheet(toolbar_btn_style)
         self.btn_search.clicked.connect(self.toggle_search_bar)
@@ -413,7 +418,7 @@ class XmlEditorWidget(QWidget):
         self.btn_zoom_out = QPushButton("A-")
         self.btn_zoom_out.setToolTip("縮小 (Ctrl+-)")
         self.btn_zoom_out.setStyleSheet(toolbar_btn_style)
-        self.btn_zoom_out.setFixedWidth(36)
+        self.btn_zoom_out.setFixedWidth(44)
         self.btn_zoom_out.clicked.connect(self._zoom_out)
         header.addWidget(self.btn_zoom_out)
 
@@ -427,7 +432,7 @@ class XmlEditorWidget(QWidget):
         self.btn_zoom_in = QPushButton("A+")
         self.btn_zoom_in.setToolTip("拡大 (Ctrl++)")
         self.btn_zoom_in.setStyleSheet(toolbar_btn_style)
-        self.btn_zoom_in.setFixedWidth(36)
+        self.btn_zoom_in.setFixedWidth(44)
         self.btn_zoom_in.clicked.connect(self._zoom_in)
         header.addWidget(self.btn_zoom_in)
 
@@ -436,7 +441,8 @@ class XmlEditorWidget(QWidget):
         sep3.setStyleSheet("color: #CBD5E1;")
         header.addWidget(sep3)
 
-        self.btn_save = QPushButton("💾 保存")
+        self.btn_save = QPushButton("保存")
+        self.btn_save.setIcon(icon("save", "#FFFFFF", "#DBEAFE"))
         self.btn_save.setToolTip("Ctrl+S")
         self.btn_save.setStyleSheet(save_btn_style)
         self.btn_save.setEnabled(False)
@@ -447,13 +453,13 @@ class XmlEditorWidget(QWidget):
 
         # Search bar (hidden by default)
         self.search_bar = QWidget()
-        self.search_bar.setStyleSheet("background-color: #F1F5F9; border-radius: 6px; padding: 4px;")
+        self.search_bar.setObjectName("searchBar")
+        # Scope to the bar itself so child widgets (icon label, buttons) don't inherit the padding
+        self.search_bar.setStyleSheet("QWidget#searchBar { background-color: #F1F5F9; border-radius: 6px; padding: 4px; }")
         search_layout = QHBoxLayout(self.search_bar)
         search_layout.setContentsMargins(8, 4, 8, 4)
 
-        search_label = QLabel("🔍")
-        search_label.setStyleSheet("background: transparent;")
-        search_layout.addWidget(search_label)
+        search_layout.addWidget(icon_label("search", 16))
 
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("検索文字列を入力...")
@@ -465,19 +471,19 @@ class XmlEditorWidget(QWidget):
         self.search_result_label.setStyleSheet("background: transparent; color: #64748B;")
         search_layout.addWidget(self.search_result_label)
 
-        self.btn_find_prev = QPushButton("◀ 前へ")
+        self.btn_find_prev = QPushButton("前へ")
+        self.btn_find_prev.setIcon(icon("chevron-left"))
         self.btn_find_prev.setStyleSheet(toolbar_btn_style)
         self.btn_find_prev.clicked.connect(self.find_previous)
         search_layout.addWidget(self.btn_find_prev)
 
-        self.btn_find_next = QPushButton("次へ ▶")
+        self.btn_find_next = QPushButton("次へ")
+        self.btn_find_next.setIcon(icon("chevron-right"))
         self.btn_find_next.setStyleSheet(toolbar_btn_style)
         self.btn_find_next.clicked.connect(self.find_next)
         search_layout.addWidget(self.btn_find_next)
 
-        self.btn_close_search = QPushButton("✕")
-        self.btn_close_search.setFixedWidth(30)
-        self.btn_close_search.setStyleSheet(toolbar_btn_style)
+        self.btn_close_search = icon_button("x", "検索バーを閉じる (Esc)")
         self.btn_close_search.clicked.connect(self.hide_search_bar)
         search_layout.addWidget(self.btn_close_search)
 

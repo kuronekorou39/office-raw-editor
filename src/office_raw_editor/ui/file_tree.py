@@ -4,23 +4,21 @@ from pathlib import Path
 from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtGui import QIcon, QAction, QFont
 from PyQt6.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
     QHeaderView,
-    QStyle,
     QMenu,
 )
 
+from .icons import icon
+from .styles import COLORS
 from ..utils.constants import (
     TREE_COLUMN_NAME,
     TREE_COLUMN_SIZE,
     TREE_COLUMN_TYPE,
     FILE_TYPE_MAP,
-    FOLDER_ICON,
-    UNKNOWN_ICON,
-    MAIN_CONTENT_MARKER,
     format_file_size,
     is_main_content_file,
 )
@@ -47,6 +45,9 @@ class FileTreeWidget(QTreeWidget):
 
     # Color used to highlight files containing the search string
     SEARCH_HIGHLIGHT_COLOR = '#FEF08A'  # 薄い黄色
+
+    # Item data role holding the plain size text (hit counts are appended to the visible text)
+    SIZE_TEXT_ROLE = Qt.ItemDataRole.UserRole + 1
 
     def __init__(self, parent=None):
         """Initialize the FileTreeWidget.
@@ -114,11 +115,11 @@ class FileTreeWidget(QTreeWidget):
 
         if is_dir:
             # Folder context menu
-            action_add_file = QAction("📄 ファイルを追加...", self)
+            action_add_file = QAction(icon("file-plus"), "ファイルを追加...", self)
             action_add_file.triggered.connect(lambda: self.file_add_requested.emit(rel_path))
             menu.addAction(action_add_file)
 
-            action_add_folder = QAction("📁 フォルダを追加...", self)
+            action_add_folder = QAction(icon("folder-plus"), "フォルダを追加...", self)
             action_add_folder.triggered.connect(lambda: self.folder_add_requested.emit(rel_path))
             menu.addAction(action_add_folder)
         else:
@@ -128,55 +129,57 @@ class FileTreeWidget(QTreeWidget):
             # Show revert option for modified/added/deleted files
             if status in ('M', 'A', 'D'):
                 if status == 'A':
-                    revert_label = "↩️ 元に戻す (追加を取り消し)"
+                    revert_label = "元に戻す (追加を取り消し)"
                 elif status == 'D':
-                    revert_label = "↩️ 元に戻す (削除を取り消し)"
+                    revert_label = "元に戻す (削除を取り消し)"
                 else:
-                    revert_label = "↩️ 元に戻す (変更を取り消し)"
+                    revert_label = "元に戻す (変更を取り消し)"
 
-                action_revert = QAction(revert_label, self)
+                action_revert = QAction(icon("undo"), revert_label, self)
                 action_revert.triggered.connect(lambda: self.file_revert_requested.emit(rel_path))
                 menu.addAction(action_revert)
                 menu.addSeparator()
 
             # Only show replace/delete for existing files (not deleted)
             if status != 'D':
-                action_replace = QAction("🔄 ファイルを差し替え...", self)
+                action_replace = QAction(icon("file-input"), "ファイルを差し替え...", self)
                 action_replace.triggered.connect(lambda: self.file_replace_requested.emit(rel_path))
                 menu.addAction(action_replace)
 
                 menu.addSeparator()
 
-                action_delete = QAction("🗑️ 削除", self)
+                action_delete = QAction(icon("trash", COLORS['danger']), "削除", self)
                 action_delete.triggered.connect(lambda: self.file_delete_requested.emit(rel_path))
                 menu.addAction(action_delete)
 
         menu.exec(self.viewport().mapToGlobal(position))
 
-    def _get_file_icon(self, is_dir: bool, suffix: str) -> QIcon:
+    # Icon name and tint per file type (see FILE_TYPE_MAP)
+    _TYPE_ICONS = {
+        "xml": ("file-text", COLORS['primary']),
+        "rels": ("file", COLORS['text_muted']),
+        "image": ("image", COLORS['success']),
+    }
+
+    def _get_file_icon(self, is_dir: bool, suffix: str, is_main: bool = False) -> QIcon:
         """Get the appropriate icon for a file or directory.
 
         Args:
             is_dir: True if this is a directory.
             suffix: File extension (including dot).
+            is_main: True for main content files (document.xml, sheet1.xml, ...).
 
         Returns:
             QIcon for the item.
         """
-        style = self.style()
         if is_dir:
-            return style.standardIcon(QStyle.StandardPixmap.SP_DirIcon)
+            return icon("folder", COLORS['warning'])
+        if is_main:
+            return icon("pin", COLORS['primary'])
 
-        # Map by file extension
-        suffix_lower = suffix.lower()
-        if suffix_lower in FILE_TYPE_MAP:
-            file_type = FILE_TYPE_MAP[suffix_lower]
-            if file_type in ["xml", "rels"]:
-                return style.standardIcon(QStyle.StandardPixmap.SP_FileIcon)
-            elif file_type == "image":
-                return style.standardIcon(QStyle.StandardPixmap.SP_DesktopIcon)
-
-        return style.standardIcon(QStyle.StandardPixmap.SP_FileIcon)
+        file_type = FILE_TYPE_MAP.get(suffix.lower())
+        name, color = self._TYPE_ICONS.get(file_type, ("file", COLORS['text_secondary']))
+        return icon(name, color)
 
     def _get_file_type(self, is_dir: bool, suffix: str) -> str:
         """Get the file type description.
@@ -267,15 +270,15 @@ class FileTreeWidget(QTreeWidget):
                 item.setData(0, Qt.ItemDataRole.UserRole, current_rel)
 
                 is_main = not is_dir and is_main_content_file(current_rel)
-                display_name = f"{MAIN_CONTENT_MARKER}{name}" if is_main else name
-                item.setText(0, display_name)
-                item.setText(1, format_file_size(size) if not is_dir else "")
+                item.setText(0, name)
+                size_text = format_file_size(size) if not is_dir else ""
+                item.setText(1, size_text)
+                item.setData(1, self.SIZE_TEXT_ROLE, size_text)
                 item.setText(2, self._get_file_type(is_dir, suffix))
-                item.setIcon(0, self._get_file_icon(is_dir, suffix))
+                item.setIcon(0, self._get_file_icon(is_dir, suffix, is_main))
 
                 # Bold for main content files
                 if is_main:
-                    from PyQt6.QtGui import QFont
                     font = item.font(0)
                     font.setBold(True)
                     item.setFont(0, font)
@@ -459,13 +462,10 @@ class FileTreeWidget(QTreeWidget):
 
             # Update size column text to include hit count
             if not is_dir:
-                size_text = item.text(1)
-                # Strip any previous hit suffix
-                if "  🔍" in size_text:
-                    size_text = size_text.split("  🔍", 1)[0]
+                size_text = item.data(1, self.SIZE_TEXT_ROLE) or ""
                 count = self._search_match_counts.get(rel_path, 0)
                 if count > 0:
-                    item.setText(1, f"{size_text}  🔍{count}")
+                    item.setText(1, f"{size_text}  ({count}件)")
                 else:
                     item.setText(1, size_text)
 

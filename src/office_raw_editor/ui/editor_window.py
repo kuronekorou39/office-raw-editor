@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 
 from .xml_editor import XmlEditorWidget
 from .styles import APP_STYLESHEET
+from ..utils.constants import APP_NAME
 
 
 class EditorWindow(QMainWindow):
@@ -40,7 +41,7 @@ class EditorWindow(QMainWindow):
 
     def _setup_ui(self):
         """Set up the window UI."""
-        self.setWindowTitle("エディタ - docx-workdir")
+        self.setWindowTitle(f"エディタ - {APP_NAME}")
         self.setMinimumSize(600, 400)
         self.resize(900, 700)
 

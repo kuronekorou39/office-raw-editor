@@ -56,7 +56,7 @@ pip install -e .
 ```cmd
 cd C:\projects\office-raw-editor
 venv\Scripts\activate
-python -m docx_workdir
+python -m office_raw_editor
 ```
 
 ### Windows (PowerShell)
@@ -64,15 +64,15 @@ python -m docx_workdir
 ```powershell
 cd C:\projects\office-raw-editor
 .\venv\Scripts\Activate.ps1
-python -m docx_workdir
+python -m office_raw_editor
 ```
 
 ### ファイルを指定して起動
 
 ```cmd
-python -m docx_workdir path\to\file.docx
-python -m docx_workdir path\to\file.xlsx
-python -m docx_workdir path\to\file.pptx
+python -m office_raw_editor path\to\file.docx
+python -m office_raw_editor path\to\file.xlsx
+python -m office_raw_editor path\to\file.pptx
 ```
 
 ## 使い方

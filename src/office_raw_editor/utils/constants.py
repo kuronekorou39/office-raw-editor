@@ -121,9 +121,6 @@ _MAIN_CONTENT_PATTERNS = (
     re.compile(r'^ppt/slides/slide\d+\.xml$'),
 )
 
-# Marker prefix prepended to main content file names in the tree
-MAIN_CONTENT_MARKER = "📌 "
-
 
 def is_main_content_file(rel_path: str) -> bool:
     """Return True if the relative path is a 'main content' file.
