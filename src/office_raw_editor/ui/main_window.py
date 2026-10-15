@@ -1188,7 +1188,9 @@ class MainWindow(QMainWindow):
             f"ショートカットキー:\n"
             f"  Ctrl+O  ファイルを開く\n"
             f"  Ctrl+S  保存\n"
-            f"  Ctrl+F  検索",
+            f"  Ctrl+F  検索\n\n"
+            f"MIT License\n"
+            f"同梱ライブラリのライセンスは THIRD_PARTY_NOTICES.md と licenses フォルダを参照",
         )
 
     def closeEvent(self, event: QCloseEvent):

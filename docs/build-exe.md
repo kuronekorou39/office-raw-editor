@@ -25,6 +25,7 @@ venv\Scripts\pip install -r requirements-dev.txt   # pyinstaller もここで入
 | `office-raw-editor\office-raw-editor.exe` | 画面を開く。コンソール無し。ダブルクリック用 |
 | `office-raw-editor\_internal\` | Python 本体、Qt、依存ライブラリ。**exe と必ず一緒に置く** |
 | `office-raw-editor\README.md`、`LICENSE` | 使い方とライセンス |
+| `office-raw-editor\THIRD_PARTY_NOTICES.md`、`licenses\` | 同梱物(Qt/PySide6、Python、アイコン)の著作権表示とライセンス本文 |
 | `office-raw-editor-<版>.zip` | 上のフォルダを丸ごと固めたもの。これを配る |
 
 版は `src/office_raw_editor/__init__.py` の `__version__`。exe のプロパティの「詳細」にも出る
@@ -55,4 +56,6 @@ zip を渡し、任意の場所に展開して `office-raw-editor\office-raw-edi
 
 社内配布は問題ない。PySide6 は LGPL だが、Qt を DLL のまま同梱していて静的リンクではないので
 条件を満たす。PyInstaller 自体は GPL だが生成物には適用されない。
-社外に公開・販売する場合は LGPL の表示義務(ライセンス文書の添付)が出る。
+社外に配る場合に必要な LGPL の表示(ライセンス本文の添付)は、ビルドスクリプトが
+`THIRD_PARTY_NOTICES.md` と `licenses\` を同梱することで満たしている。
+依存やアイコンを足したときは `THIRD_PARTY_NOTICES.md` も更新する。

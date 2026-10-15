@@ -1,12 +1,28 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "office-raw-editor"
-version = "0.2.0"
+dynamic = ["version"]
 description = "A GUI application for editing Office Open XML files (Word, Excel, PowerPoint)"
+readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+authors = [{ name = "kuronekorou39" }]
+keywords = ["docx", "xlsx", "pptx", "office-open-xml", "ooxml", "xml", "editor"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Win32 (MS Windows)",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: Developers",
+    "Natural Language :: Japanese",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business :: Office Suites",
+    "Topic :: Text Editors",
+]
 dependencies = [
     "PySide6>=6.6.0",
 ]
@@ -18,11 +34,19 @@ dev = [
     "pyinstaller>=6.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/kuronekorou39/office-raw-editor"
+Issues = "https://github.com/kuronekorou39/office-raw-editor/issues"
+Changelog = "https://github.com/kuronekorou39/office-raw-editor/blob/main/CHANGELOG.md"
+
 [project.scripts]
 office-raw-editor = "office_raw_editor.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "office_raw_editor.__version__" }
 
 [tool.setuptools.package-data]
 office_raw_editor = ["ui/assets/*"]

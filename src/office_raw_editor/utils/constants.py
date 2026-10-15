@@ -3,9 +3,11 @@
 import re
 from pathlib import Path
 
+from .. import __version__
+
 # Application info
 APP_NAME = "office-raw-editor"
-APP_VERSION = "0.2.0"
+APP_VERSION = __version__
 APP_TITLE = f"{APP_NAME} v{APP_VERSION}"
 
 # File extensions - Office Open XML formats

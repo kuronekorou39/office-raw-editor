@@ -1,8 +1,11 @@
 """Monochrome vector icons for the UI.
 
-Icons are inline SVG (24x24 stroke paths, based on the ISC-licensed Lucide set)
-rendered on demand through a QIconEngine, so they stay crisp at any size and
-DPI and can be tinted to any color without extra image files or fonts.
+Icons are inline SVG (24x24 stroke paths) rendered on demand through a QIconEngine,
+so they stay crisp at any size and DPI and can be tinted to any color without extra
+image files or fonts.
+
+The path data is derived from Lucide (ISC) / Feather (MIT).
+See THIRD_PARTY_NOTICES.md for the copyright notices.
 """
 
 from typing import Optional

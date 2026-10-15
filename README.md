@@ -114,6 +114,7 @@ python -m office_raw_editor path\to\file.pptx
 - 編集前に自動でバックアップが作成されます（元ファイルと同じフォルダに `.backup` 付きで保存）
 - 大きなXMLファイルは内蔵エディタの「色付け」をOFFにすると軽くなります
 - Officeファイルの構造を壊すとアプリケーションで開けなくなる可能性があります
+- 展開時に `..` や絶対パスを含む ZIP 内パスは無害化されるため、作業フォルダの外には書き込みません
 
 ## exe にして配る
 
@@ -138,9 +139,15 @@ pytest-qt を使い、オフスクリーン描画で GUI もテストします(�
 
 ## 動作環境
 
+- Windows 10 / 11(主対象。macOS / Linux は未検証)
 - Python 3.10以上
 - PySide6 6.6.0以上
+
+仕様は [docs/spec.md](docs/spec.md)、変更履歴は [CHANGELOG.md](CHANGELOG.md) を参照してください。
 
 ## ライセンス
 
 MIT License
+
+アイコンは Lucide (ISC) / Feather (MIT)、GUI は Qt for Python (LGPL-3.0) を使用しています。
+詳細は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照してください

@@ -1,6 +1,6 @@
 ﻿# exe をビルドして zip にする。
 #   .\scripts\build_exe.ps1
-# 出力: dist\office-raw-editor\(office-raw-editor.exe、_internal\、README.md、LICENSE)と dist\office-raw-editor-<版>.zip
+# 出力: dist\office-raw-editor\(office-raw-editor.exe、_internal\、README.md、LICENSE、THIRD_PARTY_NOTICES.md、licenses\)と dist\office-raw-editor-<版>.zip
 # venv が無ければ先に作る(python -m venv venv; pip install -r requirements-dev.txt)。
 $ErrorActionPreference = "Continue"  # PyInstaller はログを標準エラーに出す。失敗は終了コードで見る
 $root = Split-Path -Parent $PSScriptRoot
@@ -31,6 +31,12 @@ if ($LASTEXITCODE -ne 0) { throw "ビルドに失敗しました" }
 $folder = Join-Path $root "dist\office-raw-editor"
 Copy-Item (Join-Path $root "README.md") $folder
 Copy-Item (Join-Path $root "LICENSE") $folder
+Copy-Item (Join-Path $root "THIRD_PARTY_NOTICES.md") $folder
+# LGPL/GPL の本文と、exe に入る Python 本体のライセンス
+$licenses = Join-Path $folder "licenses"
+Copy-Item (Join-Path $root "licenses") $licenses -Recurse
+$pythonBase = & $python -c "import sys; print(sys.base_prefix)"
+Copy-Item (Join-Path $pythonBase "LICENSE.txt") (Join-Path $licenses "Python-LICENSE.txt")
 
 $version = & $python -c "import office_raw_editor; print(office_raw_editor.__version__)"
 $zip = Join-Path $root "dist\office-raw-editor-$version.zip"
