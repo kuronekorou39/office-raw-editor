@@ -38,6 +38,7 @@ dev = [
 Homepage = "https://github.com/kuronekorou39/office-raw-editor"
 Issues = "https://github.com/kuronekorou39/office-raw-editor/issues"
 Changelog = "https://github.com/kuronekorou39/office-raw-editor/blob/main/CHANGELOG.md"
+Author = "https://rou39.com"
 
 [project.scripts]
 office-raw-editor = "office_raw_editor.app:main"
